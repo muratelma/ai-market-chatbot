@@ -1,0 +1,31 @@
+product_name,description,main_category,sub_category,target_group,product_type,features,tags,price
+Kamp Çadırı 2 Kişilik,Hafif ve su geçirmez kamp çadırı hafta sonu kampları için uygundur,Kamp,Çadır,Unisex,Outdoor,"su geçirmez,hafif,taşınabilir","kamp,outdoor,yağmur",1899
+Kamp Çadırı 4 Kişilik,Geniş iç hacimli aile tipi su geçirmez kamp çadırı,Kamp,Çadır,Unisex,Aile Tipi,"su geçirmez,geniş,aile","kamp,outdoor,aile",2899
+LED Kamp Lambası,Şarjlı taşınabilir kamp lambası gece aydınlatması sağlar,Kamp,Aydınlatma,Unisex,Lamba,"şarjlı,aydınlatma,taşınabilir","kamp,gece,ışık",399
+Gazlı Kamp Ocağı,Taşınabilir mini kamp ocağı açık hava kullanımına uygundur,Kamp,Pişirme,Unisex,Ocak,"taşınabilir,hafif,mini","kamp,yemek,outdoor",749
+Uyku Tulumu,Kış aylarında sıcak tutan hafif uyku tulumu,Kamp,Uyku,Unisex,Tulum,"sıcak,hafif,kışlık","kamp,gece,soğuk",899
+Kamp Matı,Katlanabilir yumuşak zemin kamp matı,Kamp,Uyku,Unisex,Mat,"katlanabilir,yumuşak,hafif","kamp,zemin,outdoor",299
+Katlanır Kamp Masası,Hafif alüminyum gövdeli taşınabilir kamp masası,Kamp,Mobilya,Unisex,Masa,"hafif,taşınabilir,katlanır","kamp,outdoor,masa",1349
+Kamp Sandalyesi,Katlanabilir taşıma çantalı rahat kamp sandalyesi,Kamp,Mobilya,Unisex,Sandalye,"katlanabilir,rahat,taşınabilir","kamp,outdoor,sandalye",699
+El Feneri,Yüksek ışık gücüne sahip taşınabilir el feneri,Aksesuar,Aydınlatma,Unisex,Fener,"güçlü ışık,taşınabilir,hafif","gece,ışık,kamp",299
+İlk Yardım Seti,Araçta ve kampta kullanılabilecek temel ilk yardım çantası,Aksesuar,Güvenlik,Unisex,Set,"acil durum,taşınabilir,temel","kamp,güvenlik,ilk yardım",459
+Koşu Ayakkabısı,Nefes alabilen hafif tabanlı günlük koşu ayakkabısı,Ayakkabı,Spor Ayakkabı,Unisex,Koşu,"hafif,rahat,spor","koşu,günlük,spor",1799
+Yürüyüş Ayakkabısı,Suya dayanıklı sağlam tabanlı outdoor ayakkabı,Ayakkabı,Outdoor Ayakkabı,Unisex,Yürüyüş,"su geçirmez,sağlam,rahat","yürüyüş,outdoor,yağmur",2199
+Kadın Sneaker Günlük,Şık ve rahat günlük kullanım sneaker modeli,Ayakkabı,Sneaker,Kadın,Günlük,"hafif,şık,rahat","kadın,günlük,sneaker",1399
+Erkek Sneaker Günlük,Rahat tabanlı günlük kullanım erkek sneaker modeli,Ayakkabı,Sneaker,Erkek,Günlük,"hafif,rahat,günlük","erkek,günlük,sneaker",1499
+Kadın Bot Su Geçirmez,Yağmurlu havalar için uygun su geçirmez kadın botu,Ayakkabı,Bot,Kadın,Outdoor,"su geçirmez,sağlam,kışlık","kadın,yağmur,bot",2499
+Erkek Bot Outdoor,Zorlu hava şartlarına uygun erkek outdoor botu,Ayakkabı,Bot,Erkek,Outdoor,"su geçirmez,sağlam,outdoor","erkek,yağmur,bot",2699
+Kadın Yazlık Elbise,Hafif kumaş günlük kullanım için uygun yazlık elbise,Giyim,Elbise,Kadın,Yazlık,"hafif,yazlık,rahat","kadın,elbise,yaz",1299
+Kadın Abiye Elbise,Özel davetler için şık uzun kadın abiye elbisesi,Giyim,Elbise,Kadın,Abiye,"şık,uzun,davet","kadın,elbise,abiye",3299
+Erkek Spor Gömlek,Rahat kesimli günlük erkek spor gömlek,Giyim,Gömlek,Erkek,Günlük,"rahat,günlük,hafif","erkek,gömlek,günlük",999
+Erkek Klasik Gömlek,Ofis ve özel günler için klasik erkek gömlek,Giyim,Gömlek,Erkek,Klasik,"şık,ofis,klasik","erkek,gömlek,ofis",1499
+Polar Mont,Soğuk havalar için sıcak tutan fermuarlı polar,Giyim,Mont,Unisex,Kışlık,"sıcak,kışlık,rahat","soğuk,kış,mont",1199
+Yağmurluk,Su geçirmez kapüşonlu outdoor yağmurluk,Giyim,Mont,Unisex,Outdoor,"su geçirmez,kapüşonlu,yağmurlu hava","yağmur,mont,outdoor",799
+Kablosuz Mouse,Ergonomik tasarımlı sessiz kablosuz mouse,Elektronik,Bilgisayar,Unisex,Mouse,"kablosuz,ergonomik,sessiz","mouse,bilgisayar,kablosuz",349
+Mekanik Klavye,RGB ışıklı oyuncu mekanik klavyesi,Elektronik,Bilgisayar,Unisex,Klavye,"rgb,oyuncu,mekanik","klavye,bilgisayar,gaming",1299
+Bluetooth Kulaklık,Gürültü azaltmalı kablosuz kulaklık,Elektronik,Ses,Unisex,Kulaklık,"kablosuz,bluetooth,gürültü azaltma","kulaklık,bluetooth,müzik",1599
+Akıllı Saat,Spor takibi ve bildirim özellikli akıllı saat,Elektronik,Giyilebilir,Unisex,Saat,"bildirim,spor,şarjlı","saat,akıllı,spor",2499
+Powerbank 20000mAh,Hızlı şarj destekli yüksek kapasiteli taşınabilir şarj cihazı,Elektronik,Aksesuar,Unisex,Powerbank,"şarjlı,taşınabilir,hızlı şarj","telefon,şarj,powerbank",999
+Yoga Matı,Kaymaz yüzeyli egzersiz ve pilates matı,Spor,Egzersiz,Unisex,Mat,"kaymaz,spor,egzersiz","spor,yoga,pilates",549
+Dambıl Seti 10 kg,Evde fitness antrenmanları için dambıl seti,Spor,Fitness,Unisex,Ağırlık,"fitness,güç,antrenman","spor,dambıl,ev",899
+Su Şişesi 750 ml,Spor ve günlük kullanım için sızdırmaz matara,Spor,Aksesuar,Unisex,Matara,"sızdırmaz,taşınabilir,günlük","spor,matara,günlük",249
