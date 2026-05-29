@@ -19,6 +19,13 @@ test_queries = [
     "spor için akıllı saat",
     "1000 ile 2000 arası elektronik",
     "1000tl altında kadın",
+
+    # Yeni chatbot mantığı testleri
+    "ayakkabı öner",
+    "elbise öner",
+    "powerbank öner",
+    "şampuan öner",
+    "1500 TL altında yazlık erkek",
 ]
 
 
@@ -48,6 +55,10 @@ def main():
             print("Parsed Query:", result.get("parsed_query"))
 
             products = result.get("products", [])
+
+            if result.get("needs_clarification"):
+                print("Takip sorusu soruldu.")
+                continue
 
             if not products:
                 print("Ürün bulunamadı.")

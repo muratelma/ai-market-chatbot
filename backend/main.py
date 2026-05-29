@@ -6,7 +6,7 @@ import faiss
 from sentence_transformers import SentenceTransformer
 
 from data_loader import load_products, load_taxonomy
-from query_parser import parse_query, build_taxonomy_embeddings
+from query_parser import parse_query, build_taxonomy_embeddings, get_clarification_response
 from search_engine import (
     create_search_text,
     apply_filters,
@@ -68,6 +68,26 @@ def search_products(req: QueryRequest):
         taxonomy_records,
     )
 
+    clarification = get_clarification_response(req.query, parsed_query, df)
+
+    if clarification.get("no_catalog_match"):
+        return {
+            "answer": "Katalogda bu isteğe uygun net bir ürün bulunamadı. Ürün adını, kullanım amacını veya kategoriyi biraz daha farklı yazabilir misin?",
+            "products": [],
+            "parsed_query": parsed_query,
+            "needs_clarification": False,
+            "follow_up_question": None,
+        }
+
+    if clarification["needs_clarification"]:
+        return {
+            "answer": clarification["follow_up_question"],
+            "products": [],
+            "parsed_query": parsed_query,
+            "needs_clarification": True,
+            "follow_up_question": clarification["follow_up_question"],
+        }
+
     filtered_df = apply_filters(df, parsed_query)
 
     has_filter = any([
@@ -82,10 +102,12 @@ def search_products(req: QueryRequest):
     ])
 
     if filtered_df.empty and has_filter:
-        return {
+       return {
             "answer": build_answer(parsed_query, 0),
             "products": [],
             "parsed_query": parsed_query,
+            "needs_clarification": False,
+            "follow_up_question": None,
         }
 
     candidate_df = filtered_df if not filtered_df.empty else df.copy()
@@ -121,7 +143,9 @@ def search_products(req: QueryRequest):
         })
 
     return {
-        "answer": build_answer(parsed_query, len(products)),
-        "products": products,
-        "parsed_query": parsed_query,
-    }
+    "answer": build_answer(parsed_query, len(products)),
+    "products": products,
+    "parsed_query": parsed_query,
+    "needs_clarification": False,
+    "follow_up_question": None,
+}

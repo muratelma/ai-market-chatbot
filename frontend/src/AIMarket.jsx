@@ -3,18 +3,54 @@ import React, { useState } from "react";
 function AIMarket() {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
-  const [products, setProducts] = useState([]);
-  const [message, setMessage] = useState(
-    "Merhaba! Size nasıl yardımcı olabilirim?"
-  );
+  const [messages, setMessages] = useState([
+    {
+      sender: "bot",
+      text: "Merhaba! Size nasıl yardımcı olabilirim?",
+      products: [],
+    },
+  ]);
   const [loading, setLoading] = useState(false);
-  const [lastQuery, setLastQuery] = useState("");
+  const [needsClarification, setNeedsClarification] = useState(false);
+  const [pendingQuery, setPendingQuery] = useState("");
+
+  const isNewSearchRequest = (text) => {
+    const q = text.toLowerCase();
+
+    const newRequestWords = [
+      "öner",
+      "öneri",
+      "tavsiye",
+      "ne alayım",
+      "ne alabilirim",
+      "arıyorum",
+      "istiyorum",
+    ];
+
+    return newRequestWords.some((word) => q.includes(word));
+  };
 
   const handleSendMessage = async () => {
     if (!input.trim() || loading) return;
 
-    const userQuery = input;
-    setLastQuery(userQuery);
+    const userQuery = input.trim();
+
+    const shouldCombineWithPrevious =
+      pendingQuery && !isNewSearchRequest(userQuery);
+
+    const queryToSend = shouldCombineWithPrevious
+      ? `${pendingQuery} ${userQuery}`
+      : userQuery;
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        sender: "user",
+        text: userQuery,
+        products: [],
+      },
+    ]);
+
     setInput("");
     setLoading(true);
 
@@ -24,22 +60,43 @@ function AIMarket() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ query: userQuery }),
+        body: JSON.stringify({ query: queryToSend }),
       });
 
       const data = await response.json();
 
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      setMessage(data.answer);
-      setProducts(data.products || []);
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "bot",
+          text: data.answer,
+          products: data.products || [],
+        },
+      ]);
+
+      const clarificationNeeded = data.needs_clarification || false;
+      setNeedsClarification(clarificationNeeded);
+
+      if (clarificationNeeded) {
+        setPendingQuery(queryToSend);
+      } else {
+        setPendingQuery("");
+      }
     } catch (error) {
-      setMessage("Backend'e bağlanamadım. Lütfen API'nin çalıştığını kontrol edin.");
-      setProducts([]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "bot",
+          text: "Backend'e bağlanamadım. Lütfen API'nin çalıştığını kontrol edin.",
+          products: [],
+        },
+      ]);
     } finally {
       setLoading(false);
     }
-  };
+};
 
   return (
     <div
@@ -161,35 +218,118 @@ function AIMarket() {
               background: "#020617",
             }}
           >
-            <div
-              style={{
-                background: "#1e293b",
-                color: "#e2e8f0",
-                padding: "12px 14px",
-                borderRadius: "14px",
-                marginBottom: "12px",
-                fontSize: "14px",
-                lineHeight: "1.5",
-              }}
-            >
-              {message}
-            </div>
+            {messages.map((msg, index) => (
+              <div key={index}>
+                <div
+                  style={{
+                    background: msg.sender === "user" ? "#5b00e8" : "#1e293b",
+                    color: "white",
+                    padding: "12px 14px",
+                    borderRadius: "14px",
+                    marginBottom: "12px",
+                    fontSize: "14px",
+                    lineHeight: "1.5",
+                    marginLeft: msg.sender === "user" ? "50px" : "0",
+                    marginRight: msg.sender === "bot" ? "50px" : "0",
+                    textAlign: msg.sender === "user" ? "right" : "left",
+                  }}
+                >
+                  {msg.text}
+                </div>
 
-            {lastQuery && (
-              <div
-                style={{
-                  background: "#1d4ed8",
-                  color: "white",
-                  padding: "10px 12px",
-                  borderRadius: "14px",
-                  marginBottom: "12px",
-                  fontSize: "14px",
-                  marginLeft: "50px",
-                }}
-              >
-                {lastQuery}
+                {msg.products &&
+                  msg.products.map((product, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        background: "linear-gradient(to bottom right, #1e293b, #0f172a)",
+                        border: "1px solid #334155",
+                        borderRadius: "16px",
+                        padding: "14px",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        <div style={{ fontSize: "28px" }}>
+                          {product.image || "🛍️"}
+                        </div>
+
+                        <div
+                          style={{
+                            background: "linear-gradient(to right, #22c55e, #10b981)",
+                            color: "white",
+                            padding: "5px 9px",
+                            borderRadius: "999px",
+                            fontSize: "12px",
+                            fontWeight: "bold",
+                          }}
+                        >
+                          {product.match} Uyum
+                        </div>
+                      </div>
+
+                      <h4 style={{ margin: "6px 0", fontSize: "17px" }}>
+                        {product.name}
+                      </h4>
+
+                      <p
+                        style={{
+                          margin: "8px 0",
+                          color: "#cbd5e1",
+                          fontSize: "13px",
+                          lineHeight: "1.4",
+                        }}
+                      >
+                        {product.description}
+                      </p>
+
+                      <div style={{ marginTop: "10px" }}>
+                        {(product.tags || []).map((tag, tagIndex) => (
+                          <span
+                            key={tagIndex}
+                            style={{
+                              display: "inline-block",
+                              background: "#334155",
+                              color: "#e2e8f0",
+                              padding: "5px 8px",
+                              borderRadius: "999px",
+                              fontSize: "11px",
+                              marginRight: "6px",
+                              marginBottom: "6px",
+                            }}
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: "10px",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <strong style={{ color: "#22d3ee", fontSize: "18px" }}>
+                          {product.price}
+                        </strong>
+
+                        <span style={{ color: "#94a3b8", fontSize: "13px" }}>
+                          ⭐ {product.rating}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
               </div>
-            )}
+            ))}
 
             {loading && (
               <div
@@ -205,109 +345,6 @@ function AIMarket() {
                 Ürünler aranıyor...
               </div>
             )}
-
-            {!loading && products.length === 0 && lastQuery && (
-              <div
-                style={{
-                  background: "#1e293b",
-                  border: "1px solid #334155",
-                  borderRadius: "14px",
-                  padding: "14px",
-                  color: "#cbd5e1",
-                  fontSize: "14px",
-                }}
-              >
-                Aradığınız kriterlere uygun ürün bulunamadı.
-              </div>
-            )}
-
-            {!loading &&
-              products.map((product, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    background: "linear-gradient(to bottom right, #1e293b, #0f172a)",
-                    border: "1px solid #334155",
-                    borderRadius: "16px",
-                    padding: "14px",
-                    marginBottom: "12px",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    <div style={{ fontSize: "28px" }}>{product.image || "🛍️"}</div>
-                    <div
-                      style={{
-                        background: "linear-gradient(to right, #22c55e, #10b981)",
-                        color: "white",
-                        padding: "5px 9px",
-                        borderRadius: "999px",
-                        fontSize: "12px",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {product.match} Uyum
-                    </div>
-                  </div>
-
-                  <h4 style={{ margin: "6px 0", fontSize: "17px" }}>
-                    {product.name}
-                  </h4>
-
-                  <p
-                    style={{
-                      margin: "8px 0",
-                      color: "#cbd5e1",
-                      fontSize: "13px",
-                      lineHeight: "1.4",
-                    }}
-                  >
-                    {product.description}
-                  </p>
-
-                  <div style={{ marginTop: "10px" }}>
-                    {(product.tags || []).map((tag, tagIndex) => (
-                      <span
-                        key={tagIndex}
-                        style={{
-                          display: "inline-block",
-                          background: "#334155",
-                          color: "#e2e8f0",
-                          padding: "5px 8px",
-                          borderRadius: "999px",
-                          fontSize: "11px",
-                          marginRight: "6px",
-                          marginBottom: "6px",
-                        }}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: "10px",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <strong style={{ color: "#22d3ee", fontSize: "18px" }}>
-                      {product.price}
-                    </strong>
-                    <span style={{ color: "#94a3b8", fontSize: "13px" }}>
-                      ⭐ {product.rating}
-                    </span>
-                  </div>
-                </div>
-              ))}
           </div>
 
           {/* Input alanı */}
