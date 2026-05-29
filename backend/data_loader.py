@@ -10,6 +10,7 @@ REQUIRED_PRODUCT_COLUMNS = [
     "product_type",
     "features",
     "tags",
+    "attributes",
     "price",
 ]
 

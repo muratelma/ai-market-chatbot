@@ -10,6 +10,7 @@ OUTPUT_COLUMNS = [
     "product_type",
     "features",
     "tags",
+    "attributes",
     "price",
 ]
 
@@ -31,6 +32,7 @@ def prepare_dataset(input_path="raw_products.csv", output_path="products_prepare
 
     prepared_df["features"] = raw_df.get("features", "")
     prepared_df["tags"] = raw_df.get("tags", "")
+    prepared_df["attributes"] = raw_df.get("attributes", "{}")
 
     prepared_df["price"] = raw_df.get("price", raw_df.get("selling_price", 0))
 

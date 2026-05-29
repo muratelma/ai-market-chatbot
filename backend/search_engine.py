@@ -11,46 +11,45 @@ def create_search_text(df):
         df["target_group"].astype(str) + " | " +
         df["product_type"].astype(str) + " | " +
         df["features"].astype(str) + " | " +
-        df["tags"].astype(str)
+        df["tags"].astype(str) + " | " +
+        df["attributes"].astype(str)
     ).tolist()
 
 
 def apply_filters(df, parsed_query):
-    base = df.copy()
+    filtered = df.copy()
 
     if parsed_query["min_price"] is not None:
-        base = base[base["price"] >= parsed_query["min_price"]]
+        filtered = filtered[filtered["price"] >= parsed_query["min_price"]]
 
     if parsed_query["max_price"] is not None:
-        base = base[base["price"] <= parsed_query["max_price"]]
+        filtered = filtered[filtered["price"] <= parsed_query["max_price"]]
 
-    def apply_field_filters(data, fields):
-        filtered = data.copy()
+    # Ana kategori, alt kategori ve hedef kitle net filtrelerdir.
+    for field in ["main_category", "sub_category", "target_group"]:
+        value = parsed_query[field]
 
-        for field in fields:
-            value = parsed_query[field]
-            if value is not None:
-                filtered = filtered[
-                    filtered[field].str.lower() == str(value).lower()
-                ]
+        if value is not None:
+            filtered = filtered[
+                filtered[field].astype(str).str.lower() == str(value).lower()
+            ]
 
-        return filtered
+    # Product type için biraz daha esnek eşleşme yapıyoruz.
+    # Örnek: "Saat" sorgusu "Akıllı Saat" ürününü yakalayabilsin.
+    product_type = parsed_query["product_type"]
 
-    strict_fields = [
-        "main_category",
-        "sub_category",
-        "target_group",
-        "product_type",
-    ]
+    if product_type is not None:
+        value_lower = str(product_type).lower()
 
-    filtered = apply_field_filters(base, strict_fields)
+        product_series = filtered["product_type"].astype(str).str.lower()
 
-    # product_type çok daraltırsa bir kademe gevşet
-    if filtered.empty and parsed_query["product_type"] is not None:
-        filtered = apply_field_filters(
-            base,
-            ["main_category", "sub_category", "target_group"]
+        mask = (
+            (product_series == value_lower)
+            | (product_series.str.contains(value_lower, regex=False, na=False))
+            | (product_series.apply(lambda item: item in value_lower))
         )
+
+        filtered = filtered[mask]
 
     return filtered
 
@@ -94,6 +93,7 @@ def semantic_search(query, candidate_df, model, product_embeddings, parsed_query
             str(row["description"]) + " " +
             str(row["features"]) + " " +
             str(row["tags"]) + " " +
+            str(row["attributes"]) + " " +
             str(row["product_type"]) + " " +
             str(row["sub_category"]) + " " +
             str(row["main_category"])
