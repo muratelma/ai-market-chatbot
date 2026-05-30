@@ -29,6 +29,11 @@ FEATURE_SYNONYMS = {
     "yaz": ["yazlık", "hafif", "nefes alabilir"],
     "yazlık": ["yazlık", "hafif", "nefes alabilir"],
     "yazlik": ["yazlık", "hafif", "nefes alabilir"],
+    "dökülme": ["saç dökülmesi", "dökülme karşıtı", "güçlendirici"],
+    "saç dökülmesi": ["saç dökülmesi", "dökülme karşıtı", "güçlendirici"],
+    "kepek": ["kepek", "kepek karşıtı"],
+    "kuru saç": ["kuru saç", "nemlendirici", "onarıcı"],
+    "yağlı saç": ["yağlı saç", "yağ dengeleyici"],
 }
 
 
@@ -51,6 +56,55 @@ CONTEXT_KEYWORDS = [
     "dis mekan",
 ]
 
+QUERY_ALIASES = [
+    {
+        "keywords": ["pişik kremi", "pisik kremi"],
+        "fields": {
+            "main_category": "Anne & Bebek",
+            "sub_category": "Bakım",
+            "product_type": "Pişik Kremi",
+        },
+    },
+    {
+        "keywords": ["yoga için mat", "yoga mat", "yoga matı"],
+        "fields": {
+            "main_category": "Spor",
+            "product_type": "Yoga Matı",
+            "features": ["yoga", "mat", "kaymaz"],
+        },
+    },
+    {
+        "keywords": ["araç şarj", "arac şarj", "araba şarj", "araç için telefon şarj"],
+        "fields": {
+            "main_category": "Otomotiv",
+            "sub_category": "Elektronik",
+            "product_type": "Araç Şarj Cihazı",
+        },
+    },
+    {
+        "keywords": ["dekoratif lamba", "dekoratif ışık", "dekoratif isik"],
+        "fields": {
+            "main_category": "Ev & Yaşam",
+            "sub_category": "Aydınlatma",
+            "features": ["dekoratif", "lamba", "ışık"],
+        },
+    },
+]
+
+def apply_query_aliases(query, parsed_query):
+    q = query.lower()
+
+    for rule in QUERY_ALIASES:
+        if any(keyword in q for keyword in rule["keywords"]):
+            for field, value in rule["fields"].items():
+                if field == "features":
+                    for feature in value:
+                        if feature not in parsed_query["features"]:
+                            parsed_query["features"].append(feature)
+                else:
+                    parsed_query[field] = value
+
+    return parsed_query
 
 def extract_price_range(query):
     q = query.lower()
@@ -315,6 +369,12 @@ def parse_query(query, df, model, taxonomy_embeddings, taxonomy_records):
         "taxonomy_match": taxonomy_match,
     }
 
+    parsed = apply_query_aliases(query, parsed)
+    inferred_main_category = infer_main_category_from_parsed(parsed, df)
+
+    if parsed["main_category"] is None and inferred_main_category is not None:
+        parsed["main_category"] = inferred_main_category
+
     if taxonomy_match is not None:
         field = taxonomy_match["field"]
         value = taxonomy_match["value"]
@@ -326,6 +386,7 @@ def parse_query(query, df, model, taxonomy_embeddings, taxonomy_records):
         # Örnek: "ayakkabı öner" -> Sneaker yapma.
         if explicit_main_category is not None and field in ["sub_category", "product_type"]:
             if len(remaining_query) < 3:
+                parsed = normalize_category_consistency(parsed, df, query)
                 return parsed
 
         # Kullanıcı açıkça alt kategori yazdıysa ve geriye detay kalmadıysa
@@ -333,9 +394,11 @@ def parse_query(query, df, model, taxonomy_embeddings, taxonomy_records):
         # Örnek: "elbise öner" -> Abiye yapma.
         if explicit_sub_category is not None and field == "product_type":
             if len(remaining_query) < 3:
+                parsed = normalize_category_consistency(parsed, df, query)
                 return parsed
 
-        if field == "main_category" and explicit_main_category is not None:
+        if field == "main_category" and parsed["main_category"] is not None:
+            parsed = normalize_category_consistency(parsed, df, query)
             return parsed
 
         seasonal_product_types = ["Yazlık", "Kışlık"]
@@ -352,10 +415,13 @@ def parse_query(query, df, model, taxonomy_embeddings, taxonomy_records):
             # Örnek: "yazlık erkek ayakkabı" -> product_type Yazlık olmamalı.
             # Ama "kadın yazlık elbise" -> product_type Yazlık olabilir.
             if not any(word in q_lower for word in clothing_words):
+                parsed = normalize_category_consistency(parsed, df, query)
                 return parsed
 
         if parsed.get(field) is None:
             parsed[field] = value
+
+    parsed = normalize_category_consistency(parsed, df, query)
 
     return parsed
 
@@ -479,6 +545,127 @@ def infer_main_category_from_parsed(parsed_query, df):
             return matched_rows["main_category"].mode().iloc[0]
 
     return None
+
+def infer_main_category_from_query_context(query):
+    q = query.lower()
+
+    context_category_map = {
+        "kamp": "Kamp",
+        "outdoor": "Kamp",
+        "çadır": "Kamp",
+        "cadir": "Kamp",
+
+        "ev": "Ev & Yaşam",
+        "dekoratif": "Ev & Yaşam",
+        "dekorasyon": "Ev & Yaşam",
+
+        "mutfak": "Mutfak",
+        "kahve": "Mutfak",
+
+        "bebek": "Anne & Bebek",
+        "pişik": "Anne & Bebek",
+        "pisik": "Anne & Bebek",
+
+        "araç": "Otomotiv",
+        "arac": "Otomotiv",
+        "otomobil": "Otomotiv",
+        "araba": "Otomotiv",
+    }
+
+    for keyword, category in context_category_map.items():
+        if keyword in q:
+            return category
+
+    return None
+
+
+def normalize_category_consistency(parsed_query, df, query):
+    context_main_category = infer_main_category_from_query_context(query)
+
+    # Ana kategori ile alt kategori aynıysa alt kategoriyi temizle.
+    # Örnek: main_category=Elektronik, sub_category=Elektronik yanlış.
+    if (
+        parsed_query.get("main_category") is not None and
+        parsed_query.get("sub_category") is not None and
+        str(parsed_query["main_category"]).lower() == str(parsed_query["sub_category"]).lower()
+    ):
+        parsed_query["sub_category"] = None
+
+    product_type = parsed_query.get("product_type")
+
+    # Product type varsa en güvenilir bilgi genelde product_type'tır.
+    # Örnek: Akıllı Saat -> Elektronik / Giyilebilir Teknoloji
+    if product_type is not None:
+        product_type_lower = str(product_type).lower()
+
+        matched_rows = df[
+            df["product_type"].astype(str).str.lower() == product_type_lower
+        ]
+
+        if not matched_rows.empty:
+            correct_main_category = matched_rows["main_category"].mode().iloc[0]
+            parsed_query["main_category"] = correct_main_category
+
+            unique_sub_categories = matched_rows["sub_category"].dropna().unique().tolist()
+
+            # Eğer product_type sadece tek sub_category altında geçiyorsa onu kullan.
+            # Örnek: Kahve Makinesi -> Küçük Ev Aleti
+            if len(unique_sub_categories) == 1:
+                parsed_query["sub_category"] = unique_sub_categories[0]
+
+            # Eğer product_type birden fazla sub_category altında geçiyorsa
+            # sub_category filtresini kaldır. Çünkü product_type zaten yeterince net.
+            # Örnek: Yoga Matı hem Egzersiz hem Yoga altında olabilir.
+            else:
+                parsed_query["sub_category"] = None
+
+            return parsed_query
+
+    # Product type yoksa ve sorguda güçlü bağlam varsa onu ana kategori olarak kullan.
+    # Örnek: "kamp için gece ışık" -> Kamp > Aydınlatma
+    if context_main_category is not None:
+        parsed_query["main_category"] = context_main_category
+
+    # Context düzeltmesinden sonra ana kategori ve alt kategori aynı olduysa temizle.
+    if (
+        parsed_query.get("main_category") is not None and
+        parsed_query.get("sub_category") is not None and
+        str(parsed_query["main_category"]).lower() == str(parsed_query["sub_category"]).lower()
+    ):
+        parsed_query["sub_category"] = None
+
+    # Main category + sub_category birlikte varsa gerçekten ürünlerde var mı kontrol et.
+    if (
+        parsed_query.get("main_category") is not None and
+        parsed_query.get("sub_category") is not None
+    ):
+        check_rows = df[
+            (df["main_category"].astype(str).str.lower() == str(parsed_query["main_category"]).lower()) &
+            (df["sub_category"].astype(str).str.lower() == str(parsed_query["sub_category"]).lower())
+        ]
+
+        # Eğer bu ikili dataset'te yoksa sub_category'yi temizle.
+        if check_rows.empty:
+            parsed_query["sub_category"] = None
+
+    # Hâlâ main_category boş ama sub_category varsa, sadece tek ana kategoriye bağlıysa doldur.
+    if (
+        parsed_query.get("main_category") is None and
+        parsed_query.get("sub_category") is not None
+    ):
+        sub_category_lower = str(parsed_query["sub_category"]).lower()
+
+        matched_rows = df[
+            df["sub_category"].astype(str).str.lower() == sub_category_lower
+        ]
+
+        if not matched_rows.empty:
+            unique_main_categories = matched_rows["main_category"].dropna().unique().tolist()
+
+            if len(unique_main_categories) == 1:
+                parsed_query["main_category"] = unique_main_categories[0]
+
+    return parsed_query
 
 def build_follow_up_question(parsed_query, df):
     main_category = infer_main_category_from_parsed(parsed_query, df)

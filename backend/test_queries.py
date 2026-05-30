@@ -26,6 +26,21 @@ test_queries = [
     "powerbank öner",
     "şampuan öner",
     "1500 TL altında yazlık erkek",
+    "saç dökülmesi için şampuan öner",
+    "kepek için şampuan öner",
+    "yağlı saç için şampuan",
+    "kuru cilt için nemlendirici",
+    "yağlı cilt için temizleyici",
+    "bebek için pişik kremi",
+    "mutfak için kahve makinesi",
+    "ofis için ergonomik mouse",
+    "araç için telefon şarj cihazı",
+    "ev için dekoratif lamba",
+    "spor için dambıl",
+    "yoga için mat",
+    "kamp için çadır",
+    "soğuk havalar için mont",
+    "yazlık erkek ayakkabı",
 ]
 
 

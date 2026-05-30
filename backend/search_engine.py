@@ -15,6 +15,19 @@ def create_search_text(df):
         df["attributes"].astype(str)
     ).tolist()
 
+def row_contains_any_feature(row, features):
+    combined_text = (
+        str(row.get("product_name", "")) + " " +
+        str(row.get("description", "")) + " " +
+        str(row.get("features", "")) + " " +
+        str(row.get("tags", "")) + " " +
+        str(row.get("attributes", "")) + " " +
+        str(row.get("product_type", "")) + " " +
+        str(row.get("sub_category", "")) + " " +
+        str(row.get("main_category", ""))
+    ).lower()
+
+    return any(str(feature).lower() in combined_text for feature in features)
 
 def apply_filters(df, parsed_query):
     filtered = df.copy()
@@ -27,16 +40,16 @@ def apply_filters(df, parsed_query):
 
     # Ana kategori, alt kategori ve hedef kitle net filtrelerdir.
     for field in ["main_category", "sub_category", "target_group"]:
-        value = parsed_query[field]
+        value = parsed_query.get(field)
 
         if value is not None:
             filtered = filtered[
                 filtered[field].astype(str).str.lower() == str(value).lower()
             ]
 
-    # Product type için biraz daha esnek eşleşme yapıyoruz.
-    # Örnek: "Saat" sorgusu "Akıllı Saat" ürününü yakalayabilsin.
-    product_type = parsed_query["product_type"]
+    # Product type için esnek eşleşme.
+    # Örn: "Mouse" -> "Oyuncu Mouse", "Klavye Mouse Set" gibi ürünleri de yakalayabilir.
+    product_type = parsed_query.get("product_type")
 
     if product_type is not None:
         value_lower = str(product_type).lower()
@@ -51,7 +64,24 @@ def apply_filters(df, parsed_query):
 
         filtered = filtered[mask]
 
+    # Kullanıcı belirgin özellik/ihtiyaç yazdıysa adayları bu özelliklere göre daralt.
+    # Örn: "saç dökülmesi için şampuan" -> sadece dökülme karşıtı/güçlendirici ürünler.
+    features = parsed_query.get("features", [])
+
+    if features and not filtered.empty:
+        feature_mask = []
+
+        for _, row in filtered.iterrows():
+            feature_mask.append(row_contains_any_feature(row, features))
+
+        feature_filtered = filtered.loc[feature_mask]
+
+        if not feature_filtered.empty:
+            filtered = feature_filtered
+
     return filtered
+
+  
 
 
 def calculate_match_percentage(semantic_score, bonus_score):
