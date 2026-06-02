@@ -101,6 +101,20 @@ def run_single_query(context: EvalContext, query: str) -> dict[str, Any]:
         }
 
     filtered_df = apply_filters(context.products_df, parsed_query)
+
+    # Block fallback when a strong hard filter (product_type) produced zero matches.
+    # A specific product_type that yields no rows means the item is genuinely absent
+    # from the catalog; falling back to the full database would surface unrelated products.
+    # Softer filters (main_category / sub_category alone) still allow the fallback so
+    # that broad or ambiguous queries keep returning results.
+    if filtered_df.empty and parsed_query.get("product_type") is not None:
+        return {
+            "needs_clarification": False,
+            "no_catalog_match": False,
+            "products": [],
+            "parsed_query": parsed_query,
+        }
+
     candidate_df = filtered_df if not filtered_df.empty else context.products_df.copy()
 
     result_df = semantic_search(

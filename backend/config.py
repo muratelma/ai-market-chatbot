@@ -65,4 +65,4 @@ PRODUCTS_CSV_PATH = _resolve_data_path("AI_MARKET_PRODUCTS_CSV", "products.csv")
 TAXONOMY_CSV_PATH = _resolve_data_path("AI_MARKET_TAXONOMY_CSV", "taxonomy.csv")
 
 SEARCH_TOP_K = _get_env_int("AI_MARKET_TOP_K", 5, minimum=1)
-TAXONOMY_MATCH_THRESHOLD = _get_env_float("AI_MARKET_TAXONOMY_MATCH_THRESHOLD", 0.45)
+TAXONOMY_MATCH_THRESHOLD = _get_env_float("AI_MARKET_TAXONOMY_MATCH_THRESHOLD", 0.60)

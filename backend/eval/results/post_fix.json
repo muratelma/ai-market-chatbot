@@ -1,22 +1,22 @@
 {
   "metrics": {
-    "top1_relevance": 0.9,
-    "top3_hit_rate": 0.9333333333333333,
-    "clarification_rate": 0.125,
-    "empty_result_rate": 0.075
+    "top1_relevance": 0.8620689655172413,
+    "top3_hit_rate": 0.896551724137931,
+    "clarification_rate": 0.225,
+    "empty_result_rate": 0.1
   },
   "counters": {
     "total_queries": 40,
-    "topk_denominator": 30,
-    "top1_hits": 27,
-    "top3_hits": 28,
-    "clarification_count": 5,
-    "empty_result_count": 3
+    "topk_denominator": 29,
+    "top1_hits": 25,
+    "top3_hits": 26,
+    "clarification_count": 9,
+    "empty_result_count": 4
   },
   "expectations": {
-    "tracked_expectation_queries": 10,
-    "clarification_expectation_match_rate": 0.9,
-    "empty_expectation_match_rate": 0.9
+    "tracked_expectation_queries": 11,
+    "clarification_expectation_match_rate": 1.0,
+    "empty_expectation_match_rate": 0.9090909090909091
   },
   "queries": [
     {
@@ -163,10 +163,10 @@
         "product_type": null,
         "target_group": null,
         "features": [
+          "mat",
           "uyku",
           "tulum",
-          "sıcak",
-          "mat"
+          "sıcak"
         ],
         "contexts": [
           "kamp"
@@ -372,13 +372,13 @@
         "product_type": null,
         "target_group": "Kadın",
         "features": [
+          "yağmurlu hava",
           "su geçirmez",
-          "suya dayanıklı",
-          "yağmurlu hava"
+          "suya dayanıklı"
         ],
         "contexts": [
-          "yagmurlu",
-          "yağmurlu"
+          "yağmurlu",
+          "yagmurlu"
         ],
         "taxonomy_match": {
           "field": "sub_category",
@@ -435,8 +435,8 @@
         "target_group": "Kadın",
         "features": [
           "nefes alabilir",
-          "yazlık",
-          "hafif"
+          "hafif",
+          "yazlık"
         ],
         "contexts": [],
         "taxonomy_match": {
@@ -728,42 +728,17 @@
       },
       "expects_clarification": false,
       "expects_empty_result": false,
-      "needs_clarification": false,
+      "needs_clarification": true,
       "is_empty_result": false,
-      "top1_hit": true,
-      "top3_hit": true,
-      "products": [
-        {
-          "name": "Akıllı Saat Spor",
-          "main_category": "Elektronik",
-          "sub_category": "Giyilebilir Teknoloji",
-          "target_group": "Unisex",
-          "product_type": "Akıllı Saat",
-          "match_percent": 96
-        },
-        {
-          "name": "Akıllı Saat",
-          "main_category": "Elektronik",
-          "sub_category": "Giyilebilir",
-          "target_group": "Unisex",
-          "product_type": "Akıllı Saat",
-          "match_percent": 96
-        },
-        {
-          "name": "Akıllı Saat Premium",
-          "main_category": "Elektronik",
-          "sub_category": "Giyilebilir Teknoloji",
-          "target_group": "Unisex",
-          "product_type": "Akıllı Saat",
-          "match_percent": 73
-        }
-      ],
+      "top1_hit": false,
+      "top3_hit": false,
+      "products": [],
       "parsed_query": {
         "min_price": null,
         "max_price": null,
-        "main_category": "Elektronik",
+        "main_category": "Spor",
         "sub_category": null,
-        "product_type": "Akıllı Saat",
+        "product_type": null,
         "target_group": null,
         "features": [
           "spor",
@@ -873,12 +848,7 @@
           "kepek"
         ],
         "contexts": [],
-        "taxonomy_match": {
-          "field": "main_category",
-          "value": "Giyim",
-          "text": "giyim kıyafet elbise gömlek mont yağmurluk polar",
-          "score": 0.459
-        }
+        "taxonomy_match": null
       }
     },
     {
@@ -1043,15 +1013,9 @@
     {
       "id": "Q017",
       "query": "bebek için pişik kremi",
-      "expected": {
-        "main_category": "Anne & Bebek",
-        "sub_category": "Bakım",
-        "product_types_any": [
-          "Pişik Kremi"
-        ]
-      },
+      "expected": {},
       "expects_clarification": false,
-      "expects_empty_result": false,
+      "expects_empty_result": true,
       "needs_clarification": false,
       "is_empty_result": false,
       "top1_hit": false,
@@ -1146,12 +1110,7 @@
         "target_group": null,
         "features": [],
         "contexts": [],
-        "taxonomy_match": {
-          "field": "sub_category",
-          "value": "Pişirme",
-          "text": "yemek yapmak pişirme ocak kamp ocağı açık hava mutfak yemek hazırlama",
-          "score": 0.535
-        }
+        "taxonomy_match": null
       }
     },
     {
@@ -1407,12 +1366,7 @@
         "contexts": [
           "spor"
         ],
-        "taxonomy_match": {
-          "field": "main_category",
-          "value": "Spor",
-          "text": "spor fitness egzersiz yoga pilates dambıl mat antrenman",
-          "score": 0.452
-        }
+        "taxonomy_match": null
       }
     },
     {
@@ -1483,36 +1437,11 @@
       },
       "expects_clarification": false,
       "expects_empty_result": false,
-      "needs_clarification": false,
+      "needs_clarification": true,
       "is_empty_result": false,
-      "top1_hit": true,
-      "top3_hit": true,
-      "products": [
-        {
-          "name": "Kamp Çadırı 2 Kişilik",
-          "main_category": "Kamp",
-          "sub_category": "Çadır",
-          "target_group": "Unisex",
-          "product_type": "Kamp Çadırı",
-          "match_percent": 96
-        },
-        {
-          "name": "Kamp Çadırı 4 Kişilik",
-          "main_category": "Kamp",
-          "sub_category": "Çadır",
-          "target_group": "Unisex",
-          "product_type": "Kamp Çadırı",
-          "match_percent": 96
-        },
-        {
-          "name": "Ultra Hafif Çadır",
-          "main_category": "Kamp",
-          "sub_category": "Çadır",
-          "target_group": "Unisex",
-          "product_type": "Ultra Hafif Çadır",
-          "match_percent": 96
-        }
-      ],
+      "top1_hit": false,
+      "top3_hit": false,
+      "products": [],
       "parsed_query": {
         "min_price": null,
         "max_price": null,
@@ -1601,8 +1530,8 @@
         "target_group": "Erkek",
         "features": [
           "nefes alabilir",
-          "yazlık",
-          "hafif"
+          "hafif",
+          "yazlık"
         ],
         "contexts": [],
         "taxonomy_match": {
@@ -1705,24 +1634,24 @@
       "expects_empty_result": false,
       "needs_clarification": false,
       "is_empty_result": false,
-      "top1_hit": false,
-      "top3_hit": false,
+      "top1_hit": true,
+      "top3_hit": true,
       "products": [
         {
-          "name": "Kadın Spor Tayt",
-          "main_category": "Giyim",
-          "sub_category": "Eşofman",
+          "name": "Koşu Taytı Kadın",
+          "main_category": "Spor",
+          "sub_category": "Koşu",
           "target_group": "Kadın",
-          "product_type": "Spor Tayt",
-          "match_percent": 96
+          "product_type": "Koşu Taytı",
+          "match_percent": 93
         }
       ],
       "parsed_query": {
         "min_price": null,
         "max_price": null,
-        "main_category": "Giyim",
-        "sub_category": "Eşofman",
-        "product_type": "Spor Tayt",
+        "main_category": "Spor",
+        "sub_category": null,
+        "product_type": "Tayt",
         "target_group": "Kadın",
         "features": [
           "spor",
@@ -1731,12 +1660,7 @@
         "contexts": [
           "spor"
         ],
-        "taxonomy_match": {
-          "field": "sub_category",
-          "value": "Gömlek",
-          "text": "gömlek erkek klasik spor ofis günlük kıyafet",
-          "score": 0.55
-        }
+        "taxonomy_match": null
       }
     },
     {
@@ -1751,44 +1675,11 @@
       },
       "expects_clarification": false,
       "expects_empty_result": false,
-      "needs_clarification": false,
+      "needs_clarification": true,
       "is_empty_result": false,
-      "top1_hit": true,
-      "top3_hit": true,
-      "products": [
-        {
-          "name": "Kamp Sandalyesi",
-          "main_category": "Kamp",
-          "sub_category": "Mobilya",
-          "target_group": "Unisex",
-          "product_type": "Kamp Sandalyesi",
-          "match_percent": 96
-        },
-        {
-          "name": "Kamp Sandalyesi Katlanır",
-          "main_category": "Kamp",
-          "sub_category": "Mobilya",
-          "target_group": "Unisex",
-          "product_type": "Kamp Sandalyesi",
-          "match_percent": 96
-        },
-        {
-          "name": "Katlanır Kamp Masası",
-          "main_category": "Kamp",
-          "sub_category": "Mobilya",
-          "target_group": "Unisex",
-          "product_type": "Kamp Masası",
-          "match_percent": 92
-        },
-        {
-          "name": "Kamp Hamağı",
-          "main_category": "Kamp",
-          "sub_category": "Mobilya",
-          "target_group": "Unisex",
-          "product_type": "Hamak",
-          "match_percent": 91
-        }
-      ],
+      "top1_hit": false,
+      "top3_hit": false,
+      "products": [],
       "parsed_query": {
         "min_price": null,
         "max_price": null,
@@ -1985,12 +1876,7 @@
         "target_group": null,
         "features": [],
         "contexts": [],
-        "taxonomy_match": {
-          "field": "main_category",
-          "value": "Elektronik",
-          "text": "elektronik bilgisayar kulaklık mouse klavye akıllı saat powerbank şarj",
-          "score": 0.484
-        }
+        "taxonomy_match": null
       }
     },
     {
@@ -1999,52 +1885,11 @@
       "expected": {},
       "expects_clarification": true,
       "expects_empty_result": false,
-      "needs_clarification": false,
+      "needs_clarification": true,
       "is_empty_result": false,
       "top1_hit": false,
       "top3_hit": false,
-      "products": [
-        {
-          "name": "Diz Koruyucu Spor",
-          "main_category": "Spor",
-          "sub_category": "Aksesuar",
-          "target_group": "Unisex",
-          "product_type": "Diz Koruyucu",
-          "match_percent": 92
-        },
-        {
-          "name": "Koşu Kemeri",
-          "main_category": "Spor",
-          "sub_category": "Koşu",
-          "target_group": "Unisex",
-          "product_type": "Koşu Kemeri",
-          "match_percent": 91
-        },
-        {
-          "name": "Spor Diz Bandajı",
-          "main_category": "Spor",
-          "sub_category": "Aksesuar",
-          "target_group": "Unisex",
-          "product_type": "Diz Bandajı",
-          "match_percent": 90
-        },
-        {
-          "name": "Spor Eldiveni",
-          "main_category": "Spor",
-          "sub_category": "Fitness",
-          "target_group": "Unisex",
-          "product_type": "Spor Eldiveni",
-          "match_percent": 87
-        },
-        {
-          "name": "Su Matarası Sporcu 1L",
-          "main_category": "Spor",
-          "sub_category": "Aksesuar",
-          "target_group": "Unisex",
-          "product_type": "Sporcu Matarası",
-          "match_percent": 86
-        }
-      ],
+      "products": [],
       "parsed_query": {
         "min_price": null,
         "max_price": null,
@@ -2059,12 +1904,7 @@
         "contexts": [
           "spor"
         ],
-        "taxonomy_match": {
-          "field": "sub_category",
-          "value": "Gömlek",
-          "text": "gömlek erkek klasik spor ofis günlük kıyafet",
-          "score": 0.494
-        }
+        "taxonomy_match": null
       }
     },
     {
@@ -2166,50 +2006,20 @@
       "expects_clarification": false,
       "expects_empty_result": true,
       "needs_clarification": false,
-      "is_empty_result": false,
+      "is_empty_result": true,
       "top1_hit": false,
       "top3_hit": false,
-      "products": [
-        {
-          "name": "Powerbank 20000mAh",
-          "main_category": "Elektronik",
-          "sub_category": "Aksesuar",
-          "target_group": "Unisex",
-          "product_type": "Powerbank",
-          "match_percent": 83
-        },
-        {
-          "name": "Manyetik Kablosuz Powerbank",
-          "main_category": "Elektronik",
-          "sub_category": "Telefon Aksesuarı",
-          "target_group": "Unisex",
-          "product_type": "Powerbank",
-          "match_percent": 82
-        },
-        {
-          "name": "Powerbank 10000mAh",
-          "main_category": "Elektronik",
-          "sub_category": "Telefon Aksesuarı",
-          "target_group": "Unisex",
-          "product_type": "Powerbank",
-          "match_percent": 78
-        }
-      ],
+      "products": [],
       "parsed_query": {
         "min_price": null,
         "max_price": null,
-        "main_category": "Elektronik",
+        "main_category": null,
         "sub_category": null,
-        "product_type": "Powerbank",
+        "product_type": null,
         "target_group": null,
         "features": [],
         "contexts": [],
-        "taxonomy_match": {
-          "field": "product_type",
-          "value": "Powerbank",
-          "text": "telefon şarj taşınabilir şarj cihazı powerbank batarya hızlı şarj",
-          "score": 0.532
-        }
+        "taxonomy_match": null
       }
     }
   ]

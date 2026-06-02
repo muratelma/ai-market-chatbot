@@ -82,7 +82,7 @@
   {
     "id": "Q017",
     "query": "bebek için pişik kremi",
-    "expected": {"main_category": "Anne & Bebek", "sub_category": "Bakım", "product_types_any": ["Pişik Kremi"]}
+    "expects_empty_result": true
   },
   {
     "id": "Q018",

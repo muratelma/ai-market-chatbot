@@ -480,8 +480,25 @@ def is_query_too_general(query, parsed_query, df):
     )
 
     has_target_group = parsed_query["target_group"] is not None
-    has_features = len(parsed_query["features"]) > 0
-    has_contexts = len(parsed_query["contexts"]) > 0
+
+    # Filter out direct category synonyms or context terms from the features/contexts count
+    # ONLY when this is a generic category-level query (no subcategory or product type specified).
+    # This avoids treating a category term as a query detail for itself (e.g. "spor" under "Spor").
+    main_category = parsed_query.get("main_category")
+    features = parsed_query.get("features", [])
+    contexts = parsed_query.get("contexts", [])
+
+    if main_category is not None and parsed_query.get("sub_category") is None and parsed_query.get("product_type") is None:
+        main_cat_lower = str(main_category).lower()
+        ignore_terms = {main_cat_lower}
+        if main_cat_lower in FEATURE_SYNONYMS:
+            ignore_terms.update([term.lower() for term in FEATURE_SYNONYMS[main_cat_lower]])
+        
+        features = [f for f in features if f.lower() not in ignore_terms]
+        contexts = [c for c in contexts if c.lower() not in ignore_terms]
+
+    has_features = len(features) > 0
+    has_contexts = len(contexts) > 0
 
     has_detail = any([
         has_price,
@@ -646,7 +663,30 @@ def normalize_category_consistency(parsed_query, df, query):
             else:
                 parsed_query["sub_category"] = None
 
-            return parsed_query
+            # [Precedence Check] If there is a strong query context main category that differs from
+            # the product type's default main category, allow the context category to take precedence
+            # ONLY if we can find a matching relaxed product type in that category.
+            if context_main_category is not None and context_main_category != correct_main_category:
+                words = [w for w in product_type_lower.split() if len(w) > 2]
+                relaxed_type = None
+                for word in reversed(words):
+                    candidate_types = df[df["main_category"] == context_main_category]["product_type"].dropna().unique()
+                    for c_type in candidate_types:
+                        if word in c_type.lower():
+                            relaxed_type = word.title()
+                            break
+                    if relaxed_type:
+                        break
+                
+                if relaxed_type:
+                    parsed_query["main_category"] = context_main_category
+                    parsed_query["product_type"] = relaxed_type
+                else:
+                    # Restore correct main category and return early since no match exists in context_main_category
+                    parsed_query["main_category"] = correct_main_category
+                    return parsed_query
+            else:
+                return parsed_query
 
     # Product type yoksa ve sorguda güçlü bağlam varsa onu ana kategori olarak kullan.
     # Örnek: "kamp için gece ışık" -> Kamp > Aydınlatma
