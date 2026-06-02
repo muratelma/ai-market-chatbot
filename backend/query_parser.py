@@ -3,7 +3,15 @@ import numpy as np
 import faiss
 
 
-TAXONOMY_MATCH_THRESHOLD = 0.45
+DEFAULT_TAXONOMY_MATCH_THRESHOLD = 0.45
+TURKISH_CHAR_MAP = str.maketrans({
+    "ç": "c",
+    "ğ": "g",
+    "ı": "i",
+    "ö": "o",
+    "ş": "s",
+    "ü": "u",
+})
 
 
 FEATURE_SYNONYMS = {
@@ -91,11 +99,27 @@ QUERY_ALIASES = [
     },
 ]
 
-def apply_query_aliases(query, parsed_query):
-    q = query.lower()
+def normalize_text_for_match(text):
+    normalized = str(text).lower().translate(TURKISH_CHAR_MAP)
+    normalized = re.sub(r"[^\w\s]", " ", normalized)
+    normalized = re.sub(r"\s+", " ", normalized).strip()
+    return normalized
 
+
+def contains_phrase(text, phrase):
+    normalized_text = normalize_text_for_match(text)
+    normalized_phrase = normalize_text_for_match(phrase)
+
+    if not normalized_phrase:
+        return False
+
+    pattern = rf"(?:^|\s){re.escape(normalized_phrase)}(?:\s|$)"
+    return re.search(pattern, normalized_text) is not None
+
+
+def apply_query_aliases(query, parsed_query):
     for rule in QUERY_ALIASES:
-        if any(keyword in q for keyword in rule["keywords"]):
+        if any(contains_phrase(query, keyword) for keyword in rule["keywords"]):
             for field, value in rule["fields"].items():
                 if field == "features":
                     for feature in value:
@@ -166,34 +190,31 @@ def extract_price_range(query):
 
 
 def find_value_from_column(query, df, column_name):
-    q = query.lower()
     values = df[column_name].dropna().unique().tolist()
 
     for value in values:
-        value_text = str(value).lower()
-        if value_text and value_text in q:
+        value_text = str(value)
+        if value_text and contains_phrase(query, value_text):
             return value
 
     return None
 
 
 def extract_features(query):
-    q = query.lower()
     found_features = []
 
     for keyword, mapped_features in FEATURE_SYNONYMS.items():
-        if keyword in q:
+        if contains_phrase(query, keyword):
             found_features.extend(mapped_features)
 
     return list(set(found_features))
 
 
 def extract_contexts(query):
-    q = query.lower()
     contexts = []
 
     for word in CONTEXT_KEYWORDS:
-        if word in q:
+        if contains_phrase(query, word):
             contexts.append(word)
 
     return list(set(contexts))
@@ -229,8 +250,6 @@ def clean_query_for_taxonomy(query):
 
 
 def extract_explicit_main_category(query, df):
-    q = query.lower()
-
     ambiguous_categories = ["kamp", "spor"]
     values = df["main_category"].dropna().unique().tolist()
 
@@ -240,10 +259,10 @@ def extract_explicit_main_category(query, df):
         if value_lower in ambiguous_categories:
             continue
 
-        if value_lower in q:
+        if contains_phrase(query, value_lower):
             return value
 
-        if value_lower == "ayakkabı" and "ayakkabi" in q:
+        if value_lower == "ayakkabı" and contains_phrase(query, "ayakkabi"):
             return value
 
     return None
@@ -308,7 +327,7 @@ def build_taxonomy_embeddings(model, taxonomy_records):
     return taxonomy_embeddings
 
 
-def semantic_taxonomy_match(query, model, taxonomy_embeddings, taxonomy_records):
+def semantic_taxonomy_match(query, model, taxonomy_embeddings, taxonomy_records, taxonomy_match_threshold=DEFAULT_TAXONOMY_MATCH_THRESHOLD):
     cleaned_query = clean_query_for_taxonomy(query)
 
     if len(cleaned_query) < 3:
@@ -323,7 +342,7 @@ def semantic_taxonomy_match(query, model, taxonomy_embeddings, taxonomy_records)
     best_index = int(np.argmax(scores))
     best_score = float(scores[best_index])
 
-    if best_score < TAXONOMY_MATCH_THRESHOLD:
+    if best_score < taxonomy_match_threshold:
         return None
 
     matched_item = taxonomy_records[best_index].copy()
@@ -332,7 +351,7 @@ def semantic_taxonomy_match(query, model, taxonomy_embeddings, taxonomy_records)
     return matched_item
 
 
-def parse_query(query, df, model, taxonomy_embeddings, taxonomy_records):
+def parse_query(query, df, model, taxonomy_embeddings, taxonomy_records, taxonomy_match_threshold=DEFAULT_TAXONOMY_MATCH_THRESHOLD):
     min_price, max_price = extract_price_range(query)
 
     explicit_main_category = extract_explicit_main_category(query, df)
@@ -340,7 +359,8 @@ def parse_query(query, df, model, taxonomy_embeddings, taxonomy_records):
         query,
         model,
         taxonomy_embeddings,
-        taxonomy_records
+        taxonomy_records,
+        taxonomy_match_threshold=taxonomy_match_threshold,
     )
     
     explicit_sub_category = find_value_from_column(query, df, "sub_category")
@@ -547,13 +567,15 @@ def infer_main_category_from_parsed(parsed_query, df):
     return None
 
 def infer_main_category_from_query_context(query):
-    q = query.lower()
-
     context_category_map = {
         "kamp": "Kamp",
         "outdoor": "Kamp",
         "çadır": "Kamp",
         "cadir": "Kamp",
+        "spor": "Spor",
+        "fitness": "Spor",
+        "kosu": "Spor",
+        "koşu": "Spor",
 
         "ev": "Ev & Yaşam",
         "dekoratif": "Ev & Yaşam",
@@ -572,9 +594,14 @@ def infer_main_category_from_query_context(query):
         "araba": "Otomotiv",
     }
 
+    matched_categories = set()
+
     for keyword, category in context_category_map.items():
-        if keyword in q:
-            return category
+        if contains_phrase(query, keyword):
+            matched_categories.add(category)
+
+    if len(matched_categories) == 1:
+        return list(matched_categories)[0]
 
     return None
 

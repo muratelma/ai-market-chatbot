@@ -1,0 +1,202 @@
+[
+  {
+    "id": "Q001",
+    "query": "kamp için gece ışık lazım",
+    "expected": {"main_category": "Kamp", "product_types_any": ["Kamp Lambası", "Gaz Fener", "Baş Lambası", "El Feneri"]}
+  },
+  {
+    "id": "Q002",
+    "query": "kamp için uyku ürünü lazım",
+    "expected": {"main_category": "Kamp", "product_types_any": ["Uyku Tulumu", "Kamp Matı", "Uyku Yastığı", "Şişme Yatak"]}
+  },
+  {
+    "id": "Q003",
+    "query": "kamp için yemek yapacak bir şey lazım",
+    "expected": {"main_category": "Kamp", "product_types_any": ["Kamp Ocağı", "Kamp Bardağı", "Termos"]}
+  },
+  {
+    "id": "Q004",
+    "query": "telefon için taşınabilir şarj lazım",
+    "expected": {"main_category": "Elektronik", "product_types_any": ["Powerbank", "Kablosuz Şarj", "Şarj Adaptörü"]}
+  },
+  {
+    "id": "Q005",
+    "query": "yağmurlu havalar için kadın ayakkabı",
+    "expected": {"main_category": "Ayakkabı", "target_group": "Kadın", "product_types_any": ["Yağmur Botu", "Bot", "Spor Ayakkabı"]}
+  },
+  {
+    "id": "Q006",
+    "query": "kadın yazlık elbise",
+    "expected": {"main_category": "Giyim", "sub_category": "Elbise", "target_group": "Kadın", "product_types_any": ["Yazlık", "Yazlık Elbise", "Mini Elbise", "Midi Elbise"]}
+  },
+  {
+    "id": "Q007",
+    "query": "özel gün için kadın elbise",
+    "expected": {"main_category": "Giyim", "sub_category": "Elbise", "target_group": "Kadın", "product_types_any": ["Abiye", "Maxi Elbise", "Midi Elbise"]}
+  },
+  {
+    "id": "Q008",
+    "query": "soğuk havalar için mont",
+    "expected": {"main_category": "Giyim", "sub_category": "Mont", "product_types_any": ["Şişme Mont", "Polar Mont", "Yağmurluk Mont"]}
+  },
+  {
+    "id": "Q009",
+    "query": "bilgisayar için kablosuz mouse",
+    "expected": {"main_category": "Elektronik", "sub_category": "Bilgisayar", "product_types_any": ["Mouse", "Oyuncu Mouse"]}
+  },
+  {
+    "id": "Q010",
+    "query": "oyun için klavye",
+    "expected": {"main_category": "Elektronik", "sub_category": "Bilgisayar", "product_types_any": ["Klavye", "Klavye Mouse Set"]}
+  },
+  {
+    "id": "Q011",
+    "query": "spor için akıllı saat",
+    "expected": {"main_category": "Elektronik", "product_types_any": ["Akıllı Saat"]}
+  },
+  {
+    "id": "Q012",
+    "query": "saç dökülmesi için şampuan öner",
+    "expected": {"main_category": "Kişisel Bakım", "sub_category": "Saç Bakımı", "product_types_any": ["Şampuan"]}
+  },
+  {
+    "id": "Q013",
+    "query": "kepek için şampuan öner",
+    "expected": {"main_category": "Kişisel Bakım", "sub_category": "Saç Bakımı", "product_types_any": ["Şampuan"]}
+  },
+  {
+    "id": "Q014",
+    "query": "yağlı saç için şampuan",
+    "expected": {"main_category": "Kişisel Bakım", "sub_category": "Saç Bakımı", "product_types_any": ["Şampuan"]}
+  },
+  {
+    "id": "Q015",
+    "query": "kuru cilt için nemlendirici",
+    "expected": {"main_category": "Kişisel Bakım", "sub_category": "Cilt Bakımı", "product_types_any": ["Nemlendirici", "Vücut Losyonu"]}
+  },
+  {
+    "id": "Q016",
+    "query": "yağlı cilt için temizleyici",
+    "expected": {"main_category": "Kişisel Bakım", "sub_category": "Cilt Bakımı", "product_types_any": ["Temizleyici", "Tonik", "Peeling"]}
+  },
+  {
+    "id": "Q017",
+    "query": "bebek için pişik kremi",
+    "expected": {"main_category": "Anne & Bebek", "sub_category": "Bakım", "product_types_any": ["Pişik Kremi"]}
+  },
+  {
+    "id": "Q018",
+    "query": "mutfak için kahve makinesi",
+    "expected": {"main_category": "Mutfak", "sub_category": "Küçük Ev Aleti", "product_types_any": ["Kahve Makinesi", "Türk Kahvesi Makinesi"]}
+  },
+  {
+    "id": "Q019",
+    "query": "ofis için ergonomik mouse",
+    "expected": {"main_category": "Elektronik", "sub_category": "Bilgisayar", "product_types_any": ["Mouse", "Oyuncu Mouse"]}
+  },
+  {
+    "id": "Q020",
+    "query": "araç için telefon şarj cihazı",
+    "expected": {"main_category": "Otomotiv", "sub_category": "Elektronik", "product_types_any": ["Araç Şarj Cihazı"]}
+  },
+  {
+    "id": "Q021",
+    "query": "ev için dekoratif lamba",
+    "expected": {"main_category": "Ev & Yaşam", "sub_category": "Aydınlatma", "product_types_any": ["Masa Lambası", "Gece Lambası", "Solar Lamba", "Perde Işık"]}
+  },
+  {
+    "id": "Q022",
+    "query": "spor için dambıl",
+    "expected": {"main_category": "Spor", "sub_category": "Fitness", "product_types_any": ["Dambıl", "Dambıl Seti", "Kettlebell"]}
+  },
+  {
+    "id": "Q023",
+    "query": "yoga için mat",
+    "expected": {"main_category": "Spor", "product_types_any": ["Yoga Matı", "Kamp Matı"]}
+  },
+  {
+    "id": "Q024",
+    "query": "kamp için çadır",
+    "expected": {"main_category": "Kamp", "sub_category": "Çadır", "product_types_any": ["Kamp Çadırı", "Ultra Hafif Çadır"]}
+  },
+  {
+    "id": "Q025",
+    "query": "yazlık erkek ayakkabı",
+    "expected": {"main_category": "Ayakkabı", "target_group": "Erkek", "product_types_any": ["Sandalet", "Sneaker", "Spor Ayakkabı"]}
+  },
+  {
+    "id": "Q026",
+    "query": "koşu için erkek ayakkabı",
+    "expected": {"main_category": "Ayakkabı", "target_group": "Erkek", "product_types_any": ["Koşu Ayakkabısı", "Maraton Ayakkabısı", "Spor Ayakkabı"]}
+  },
+  {
+    "id": "Q027",
+    "query": "kadın için spor tayt",
+    "expected": {"main_category": "Spor", "target_group": "Kadın", "product_types_any": ["Spor Tayt", "Koşu Taytı"]}
+  },
+  {
+    "id": "Q028",
+    "query": "kamp için katlanır sandalye",
+    "expected": {"main_category": "Kamp", "product_types_any": ["Kamp Sandalyesi", "Kamp Masası"]}
+  },
+  {
+    "id": "Q029",
+    "query": "ev için robot süpürge",
+    "expected": {"main_category": "Ev & Yaşam", "product_types_any": ["Robot Süpürge", "El Süpürgesi"]}
+  },
+  {
+    "id": "Q030",
+    "query": "kamp için termos",
+    "expected": {"main_category": "Kamp", "product_types_any": ["Termos", "Termos Bardak"]}
+  },
+  {
+    "id": "Q031",
+    "query": "ayakkabı öner",
+    "expects_clarification": true
+  },
+  {
+    "id": "Q032",
+    "query": "elbise öner",
+    "expects_clarification": true
+  },
+  {
+    "id": "Q033",
+    "query": "şampuan öner",
+    "expects_clarification": true
+  },
+  {
+    "id": "Q034",
+    "query": "elektronik öner",
+    "expects_clarification": true
+  },
+  {
+    "id": "Q035",
+    "query": "spor ürünü öner",
+    "expects_clarification": true
+  },
+  {
+    "id": "Q036",
+    "query": "1500 TL altında ürün",
+    "expects_clarification": true
+  },
+  {
+    "id": "Q037",
+    "query": "uzay gemisi motoru arıyorum",
+    "expects_empty_result": true
+  },
+  {
+    "id": "Q038",
+    "query": "ışın kılıcı tavsiye et",
+    "expects_empty_result": true
+  },
+  {
+    "id": "Q039",
+    "query": "dinozor maması lazım",
+    "expects_empty_result": true
+  },
+  {
+    "id": "Q040",
+    "query": "telepati güçlendirici cihaz istiyorum",
+    "expects_empty_result": true
+  }
+]

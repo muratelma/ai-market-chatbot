@@ -1,0 +1,6 @@
+# AI-MARKET PROJECT CORE RULES
+You are working on a backend architecture for an AI chatbot. You MUST strictly follow these language rules:
+
+1. CODEBASE (English): All variable names, function names, class names, file names, and inline code comments MUST be written in strict English.
+2. DATABASE (Turkish): The database contains Turkish products and terminology. Do NOT translate database queries, column names, or mock data into English.
+3. USER-FACING TEXT (Turkish): Any text, print statement, or response that the chatbot will output to the end-user MUST be in Turkish.

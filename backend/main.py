@@ -5,6 +5,13 @@ import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
 
+from config import (
+    MODEL_NAME_OR_PATH,
+    PRODUCTS_CSV_PATH,
+    SEARCH_TOP_K,
+    TAXONOMY_CSV_PATH,
+    TAXONOMY_MATCH_THRESHOLD,
+)
 from data_loader import load_products, load_taxonomy
 from query_parser import parse_query, build_taxonomy_embeddings, get_clarification_response
 from search_engine import (
@@ -31,10 +38,10 @@ class QueryRequest(BaseModel):
 
 
 print("Model yükleniyor...")
-model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
+model = SentenceTransformer(MODEL_NAME_OR_PATH)
 
 print("CSV okunuyor...")
-df = load_products("products.csv")
+df = load_products(PRODUCTS_CSV_PATH)
 
 print("Ürün metinleri hazırlanıyor...")
 search_texts = create_search_text(df)
@@ -45,7 +52,7 @@ product_embeddings = np.array(product_embeddings).astype("float32")
 faiss.normalize_L2(product_embeddings)
 
 print("Taksonomi verisi okunuyor...")
-taxonomy_records = load_taxonomy("taxonomy.csv")
+taxonomy_records = load_taxonomy(TAXONOMY_CSV_PATH)
 
 print("Taksonomi embeddingleri oluşturuluyor...")
 taxonomy_embeddings = build_taxonomy_embeddings(model, taxonomy_records)
@@ -66,6 +73,7 @@ def search_products(req: QueryRequest):
         model,
         taxonomy_embeddings,
         taxonomy_records,
+        taxonomy_match_threshold=TAXONOMY_MATCH_THRESHOLD,
     )
 
     clarification = get_clarification_response(req.query, parsed_query, df)
@@ -118,7 +126,7 @@ def search_products(req: QueryRequest):
         model,
         product_embeddings,
         parsed_query,
-        top_k=5,
+        top_k=SEARCH_TOP_K,
     )
 
     products = []
