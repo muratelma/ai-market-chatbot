@@ -1,32 +1,57 @@
 field,value,text
-main_category,Kamp,"kamp outdoor doğa çadır kamp ekipmanı kamp malzemeleri açık hava"
-main_category,Ayakkabı,"ayakkabı bot sneaker yürüyüş koşu günlük giyim ayak"
-main_category,Giyim,"giyim kıyafet elbise gömlek mont yağmurluk polar"
-main_category,Elektronik,"elektronik bilgisayar kulaklık mouse klavye akıllı saat powerbank şarj"
-main_category,Spor,"spor fitness egzersiz yoga pilates dambıl mat antrenman"
-main_category,Kişisel Bakım,"kişisel bakım saç bakımı cilt bakımı ağız bakımı parfüm bakım ürünü"
-sub_category,Aydınlatma,"ışık lamba fener gece aydınlatma karanlık ortam kamp ışığı"
-sub_category,Pişirme,"yemek yapmak pişirme ocak kamp ocağı açık hava mutfak yemek hazırlama"
-sub_category,Uyku,"uyku uyumak yatmak uyku tulumu mat kamp uykusu gece dinlenme"
-sub_category,Çadır,"çadır kamp çadırı konaklama barınma yağmurdan korunma outdoor"
-sub_category,Mobilya,"kamp masası kamp sandalyesi katlanır masa sandalye oturma"
-sub_category,Elbise,"elbise kıyafet kadın günlük yazlık uzun kısa elbise modeli"
-sub_category,Bot,"bot kışlık ayakkabı yağmur su geçirmez outdoor sağlam taban"
-sub_category,Sneaker,"sneaker günlük ayakkabı rahat hafif spor ayakkabı"
-sub_category,Spor Ayakkabı,"spor ayakkabı koşu yürüyüş hafif rahat taban"
-sub_category,Outdoor Ayakkabı,"outdoor ayakkabı yürüyüş ayakkabısı su geçirmez sağlam taban doğa"
-sub_category,Gömlek,"gömlek erkek klasik spor ofis günlük kıyafet"
-sub_category,Saç Bakımı,"saç bakımı şampuan saç kremi serum saç dökülmesi kepek kuru saç yağlı saç"
-sub_category,Cilt Bakımı,"cilt bakımı nemlendirici temizleyici yağlı cilt kuru cilt hassas cilt"
-sub_category,Mont,"mont yağmurluk polar soğuk hava kışlık sıcak tutan dış giyim"
-product_type,Powerbank,"telefon şarj taşınabilir şarj cihazı powerbank batarya hızlı şarj"
-product_type,Kulaklık,"kulaklık bluetooth kablosuz müzik ses gürültü azaltma"
-product_type,Mouse,"mouse kablosuz fare bilgisayar ergonomik sessiz"
-product_type,Klavye,"klavye mekanik oyuncu gaming rgb bilgisayar yazı yazma"
-product_type,Akıllı Saat,"akıllı saat spor takibi bildirim giyilebilir teknoloji saat bildirim spor takibi giyilebilir"
-product_type,Abiye,"özel gün davet düğün nişan şık uzun abiye gece elbisesi"
-product_type,Yazlık,"yazlık hafif yaz aylarında kullanılan günlük rahat elbise"
-product_type,Kışlık,"kışlık soğuk havalar için sıcak tutan ürün mont polar bot"
-product_type,Şampuan,"şampuan saç yıkama saç dökülmesi kepek yağlı saç kuru saç güçlendirici bakım"
-product_type,Saç Kremi,"saç kremi nemlendirme yumuşatma kolay tarama kuru saç bakım"
-product_type,Serum,"saç serumu cilt serumu bakım onarıcı güçlendirici yoğun bakım"
+main_category,Kamp,kamp outdoor doğa çadır kamp ekipmanı kamp malzemeleri açık hava
+main_category,Ayakkabı,ayakkabı bot sneaker yürüyüş koşu günlük giyim ayak
+main_category,Giyim,giyim kıyafet elbise gömlek mont yağmurluk polar kazak sweatshirt
+main_category,Elektronik,elektronik bilgisayar kulaklık mouse klavye akıllı saat powerbank şarj
+main_category,Spor,spor fitness egzersiz yoga pilates dambıl mat antrenman koşu
+main_category,Kişisel Bakım,kişisel bakım saç bakımı cilt bakımı ağız bakımı parfüm bakım ürünü
+main_category,Ev & Yaşam,ev yaşam dekorasyon mobilya aydınlatma temizlik düzenleyici ev aksesuarı
+main_category,Mutfak,mutfak pişirme yemek blender mikser kahve makinesi çaycı ocak
+main_category,Anne & Bebek,anne bebek çocuk bebek bakımı emzik mama yenidoğan hamile pişik kremi
+main_category,Aksesuar,aksesuar çanta cüzdan güneş gözlüğü kemer saat takı kolye bileklik
+main_category,Otomotiv,otomotiv araç araba şarj yağ bakım aksesuar temizlik araç içi
+main_category,Kırtasiye,kırtasiye kalem defter not defteri ofis malzemesi okul sanat
+sub_category,Aydınlatma,ışık lamba fener gece aydınlatma karanlık ortam kamp ışığı
+sub_category,Pişirme,yemek yapmak pişirme ocak kamp ocağı açık hava mutfak yemek hazırlama
+sub_category,Uyku,uyku uyumak yatmak uyku tulumu mat kamp uykusu gece dinlenme
+sub_category,Çadır,çadır kamp çadırı konaklama barınma yağmurdan korunma outdoor
+sub_category,Mobilya,kamp masası kamp sandalyesi katlanır masa sandalye oturma
+sub_category,Elbise,elbise kıyafet kadın günlük yazlık uzun kısa elbise modeli
+sub_category,Bot,bot kışlık ayakkabı yağmur su geçirmez outdoor sağlam taban
+sub_category,Sneaker,sneaker günlük ayakkabı rahat hafif spor ayakkabı
+sub_category,Spor Ayakkabı,spor ayakkabı koşu yürüyüş hafif rahat taban
+sub_category,Outdoor Ayakkabı,outdoor ayakkabı yürüyüş ayakkabısı su geçirmez sağlam taban doğa
+sub_category,Gömlek,gömlek erkek klasik spor ofis günlük kıyafet
+sub_category,Saç Bakımı,saç bakımı şampuan saç kremi serum saç dökülmesi kepek kuru saç yağlı saç
+sub_category,Cilt Bakımı,cilt bakımı nemlendirici temizleyici yağlı cilt kuru cilt hassas cilt
+sub_category,Mont,mont yağmurluk polar soğuk hava kışlık sıcak tutan dış giyim
+sub_category,Fitness,spor fitness egzersiz dambıl kettlebell ağırlık antrenman kas
+sub_category,Küçük Ev Aleti,blender mikser kahve makinesi çaycı ekmek kızartma elektrikli ev aleti mutfak
+sub_category,Bakım,bebek bakımı pişik kremi bebek kremi losyon bebek yağı cilt koruma
+sub_category,Bilgisayar,bilgisayar laptop mouse klavye monitör usb aksesuar
+sub_category,Telefon Aksesuarı,telefon kılıfı ekran koruyucu powerbank kablo şarj başlığı
+sub_category,Koşu,koşu maraton yürüyüş egzersiz outdoor hız kondisyon
+sub_category,Temizlik,temizlik deterjan süpürge bez temizleyici ürün ev temizliği
+sub_category,Ağız Bakımı,diş macunu diş fırçası gargara ağız bakımı diş bakımı
+sub_category,Parfüm,parfüm koku deodorant vücut spreyi unisex kadın erkek
+sub_category,Giyilebilir Teknoloji,akıllı saat fitness bileklik nabız oksijen uyku takibi
+sub_category,Aksesuar,kamp aksesuar outdoor ekipman yardımcı ürün
+product_type,Powerbank,telefon şarj taşınabilir şarj cihazı powerbank batarya hızlı şarj
+product_type,Kulaklık,kulaklık bluetooth kablosuz müzik ses gürültü azaltma
+product_type,Mouse,mouse kablosuz fare bilgisayar ergonomik sessiz
+product_type,Klavye,klavye mekanik oyuncu gaming rgb bilgisayar yazı yazma
+product_type,Akıllı Saat,akıllı saat spor takibi bildirim giyilebilir teknoloji saat nabız oksijen
+product_type,Abiye,özel gün davet düğün nişan şık uzun abiye gece elbisesi
+product_type,Yazlık,yazlık hafif yaz aylarında kullanılan günlük rahat elbise
+product_type,Kışlık,kışlık soğuk havalar için sıcak tutan ürün mont polar bot
+product_type,Şampuan,şampuan saç yıkama saç dökülmesi kepek yağlı saç kuru saç güçlendirici bakım
+product_type,Saç Kremi,saç kremi nemlendirme yumuşatma kolay tarama kuru saç bakım
+product_type,Serum,saç serumu cilt serumu bakım onarıcı güçlendirici yoğun bakım
+product_type,Pişik Kremi,pişik kremi bebek cilt koruma çinko oksit bebek kızarıklık pişik önlem
+product_type,Araç Şarj Cihazı,araç şarj cihazı araç usb şarj hızlı şarj araç içi çakmak soketi
+product_type,Kahve Makinesi,kahve makinesi filtre espresso kapsül kapçıno türk kahvesi otomatik
+product_type,Kamp Ocağı,kamp ocağı gazlı ocak açık hava pişirme outdoor butan tüp
+product_type,Yoga Matı,yoga matı kaymaz yüzey yoga egzersiz spor mat pilates
+product_type,Dekoratif Lamba,dekoratif lamba ahşap süsleme ışık dekor ambient aydınlatma
+product_type,Temizleyici,yüz temizleyici cilt temizleme micellar yüz yıkama jel köpük losyon
+product_type,Uyku Tulumu,uyku tulumu kamp gece soğuk iklim outdoor sıcak tutan

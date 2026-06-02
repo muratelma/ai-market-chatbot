@@ -32,50 +32,57 @@ def row_contains_any_feature(row, features):
 def apply_filters(df, parsed_query):
     filtered = df.copy()
 
+    # 1. Price and target_group are strict constraints
     if parsed_query["min_price"] is not None:
         filtered = filtered[filtered["price"] >= parsed_query["min_price"]]
 
     if parsed_query["max_price"] is not None:
         filtered = filtered[filtered["price"] <= parsed_query["max_price"]]
 
-    # Ana kategori, alt kategori ve hedef kitle net filtrelerdir.
-    for field in ["main_category", "sub_category", "target_group"]:
-        value = parsed_query.get(field)
+    if parsed_query.get("target_group") is not None:
+        filtered = filtered[
+            filtered["target_group"].astype(str).str.lower() == str(parsed_query["target_group"]).lower()
+        ]
 
+    # Keep a copy of strictly filtered candidates (preserving target_group) to fallback on
+    strict_filtered = filtered.copy()
+
+    # 2. Main category and sub category filters (soft: fallback if empty)
+    for field in ["main_category", "sub_category"]:
+        value = parsed_query.get(field)
         if value is not None:
-            filtered = filtered[
+            temp = filtered[
                 filtered[field].astype(str).str.lower() == str(value).lower()
             ]
+            if not temp.empty:
+                filtered = temp
 
-    # Product type için esnek eşleşme.
-    # Örn: "Mouse" -> "Oyuncu Mouse", "Klavye Mouse Set" gibi ürünleri de yakalayabilir.
+    # 3. Product type filter (strict: can make it empty)
     product_type = parsed_query.get("product_type")
-
     if product_type is not None:
         value_lower = str(product_type).lower()
-
         product_series = filtered["product_type"].astype(str).str.lower()
-
         mask = (
             (product_series == value_lower)
             | (product_series.str.contains(value_lower, regex=False, na=False))
             | (product_series.apply(lambda item: item in value_lower))
         )
-
         filtered = filtered[mask]
 
-    # Kullanıcı belirgin özellik/ihtiyaç yazdıysa adayları bu özelliklere göre daralt.
-    # Örn: "saç dökülmesi için şampuan" -> sadece dökülme karşıtı/güçlendirici ürünler.
+    # If category filter made it empty, fallback to target_group filtered dataframe
+    # only if we don't have a product_type filter constraint (since product_type mismatch should remain empty)
+    if filtered.empty and parsed_query.get("product_type") is None:
+        filtered = strict_filtered
+
+    # Apply feature filter only when the candidate pool is large enough
+    FEATURE_FILTER_MIN_POOL = 10
     features = parsed_query.get("features", [])
 
-    if features and not filtered.empty:
+    if features and not filtered.empty and len(filtered) > FEATURE_FILTER_MIN_POOL:
         feature_mask = []
-
         for _, row in filtered.iterrows():
             feature_mask.append(row_contains_any_feature(row, features))
-
         feature_filtered = filtered.loc[feature_mask]
-
         if not feature_filtered.empty:
             filtered = feature_filtered
 
@@ -137,9 +144,20 @@ def semantic_search(query, candidate_df, model, product_embeddings, parsed_query
             if context.lower() in combined_text:
                 bonus += 0.025
 
+        # Exact product_type match: strongest ranking signal — rewards products
+        # whose type precisely matches what the query asked for (e.g. "Kamp Ocağı"
+        # should outrank "Kamp Tabak Seti" even if both are semantically similar).
         if parsed_query["product_type"] is not None:
-            if str(parsed_query["product_type"]).lower() in combined_text:
-                bonus += 0.03
+            parsed_pt_lower = str(parsed_query["product_type"]).lower()
+            row_pt_lower = str(row["product_type"]).lower()
+            if parsed_pt_lower == row_pt_lower:
+                bonus += 0.10  # Exact match — strong boost
+            elif parsed_pt_lower in row_pt_lower or row_pt_lower in parsed_pt_lower:
+                # Special case: "şampuan" query should not match "kuru şampuan" unless "kuru" is in the query.
+                if parsed_pt_lower == "şampuan" and "kuru şampuan" in row_pt_lower and "kuru" not in query.lower():
+                    pass
+                else:
+                    bonus += 0.03  # Partial / superset match — moderate boost
 
         if parsed_query["main_category"] is not None:
             if str(parsed_query["main_category"]).lower() == str(row["main_category"]).lower():
@@ -163,7 +181,7 @@ def semantic_search(query, candidate_df, model, product_embeddings, parsed_query
         )
 
     result_df = result_df.sort_values(
-        by=["match_percent", "score"],
+        by=["match_percent", "bonus_score", "score"],
         ascending=False
     )
 
