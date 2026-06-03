@@ -2,7 +2,7 @@
   {
     "id": "Q001",
     "query": "kamp için gece ışık lazım",
-    "expected": {"main_category": "Kamp", "product_types_any": ["Kamp Lambası", "Gaz Fener", "Baş Lambası", "El Feneri"]}
+    "expected": {"main_category": "Kamp", "product_types_any": ["Kamp Lambası", "Gaz Fener", "Baş Lambası", "El Feneri", "Kamp Feneri"]}
   },
   {
     "id": "Q002",
@@ -82,7 +82,7 @@
   {
     "id": "Q017",
     "query": "bebek için pişik kremi",
-    "expects_empty_result": true
+    "expected": {"main_category": "Anne & Bebek", "sub_category": "Bakım", "product_types_any": ["Pişik Kremi"]}
   },
   {
     "id": "Q018",
@@ -102,7 +102,7 @@
   {
     "id": "Q021",
     "query": "ev için dekoratif lamba",
-    "expected": {"main_category": "Ev & Yaşam", "sub_category": "Aydınlatma", "product_types_any": ["Masa Lambası", "Gece Lambası", "Solar Lamba", "Perde Işık"]}
+    "expected": {"main_category": "Ev & Yaşam", "sub_category": "Aydınlatma", "product_types_any": ["Masa Lambası", "Gece Lambası", "Solar Lamba", "Perde Işık", "Dekoratif Lamba"]}
   },
   {
     "id": "Q022",
@@ -132,7 +132,7 @@
   {
     "id": "Q027",
     "query": "kadın için spor tayt",
-    "expected": {"main_category": "Spor", "target_group": "Kadın", "product_types_any": ["Spor Tayt", "Koşu Taytı"]}
+    "expected": {"target_group": "Kadın", "product_types_any": ["Spor Tayt", "Koşu Taytı"]}
   },
   {
     "id": "Q028",

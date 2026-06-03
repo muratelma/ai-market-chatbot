@@ -1,0 +1,2308 @@
+{
+  "metrics": {
+    "top1_relevance": 1.0,
+    "top3_hit_rate": 1.0,
+    "clarification_rate": 0.15,
+    "empty_result_rate": 0.1
+  },
+  "counters": {
+    "total_queries": 40,
+    "topk_denominator": 30,
+    "top1_hits": 30,
+    "top3_hits": 30,
+    "clarification_count": 6,
+    "empty_result_count": 4
+  },
+  "expectations": {
+    "tracked_expectation_queries": 10,
+    "clarification_expectation_match_rate": 1.0,
+    "empty_expectation_match_rate": 1.0
+  },
+  "queries": [
+    {
+      "id": "Q001",
+      "query": "kamp için gece ışık lazım",
+      "expected": {
+        "main_category": "Kamp",
+        "product_types_any": [
+          "Kamp Lambası",
+          "Gaz Fener",
+          "Baş Lambası",
+          "El Feneri",
+          "Kamp Feneri"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Şarjlı Kamp Feneri Büyük",
+          "main_category": "Kamp",
+          "sub_category": "Aydınlatma",
+          "target_group": "Unisex",
+          "product_type": "Kamp Feneri",
+          "match_percent": 96
+        },
+        {
+          "name": "LED Kamp Lambası",
+          "main_category": "Kamp",
+          "sub_category": "Aydınlatma",
+          "target_group": "Unisex",
+          "product_type": "Kamp Lambası",
+          "match_percent": 96
+        },
+        {
+          "name": "Kafa Lambası Şarjlı",
+          "main_category": "Kamp",
+          "sub_category": "Aydınlatma",
+          "target_group": "Unisex",
+          "product_type": "Kafa Lambası",
+          "match_percent": 95
+        },
+        {
+          "name": "Baş Lambası",
+          "main_category": "Kamp",
+          "sub_category": "Aydınlatma",
+          "target_group": "Unisex",
+          "product_type": "Baş Lambası",
+          "match_percent": 90
+        },
+        {
+          "name": "Solar Kamp Lambası",
+          "main_category": "Kamp",
+          "sub_category": "Aydınlatma",
+          "target_group": "Unisex",
+          "product_type": "Solar Lamba",
+          "match_percent": 88
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Kamp",
+        "sub_category": "Aydınlatma",
+        "product_type": null,
+        "target_group": null,
+        "features": [
+          "aydınlatma",
+          "ışık",
+          "güçlü ışık"
+        ],
+        "contexts": [
+          "gece",
+          "kamp"
+        ],
+        "taxonomy_match": {
+          "field": "sub_category",
+          "value": "Aydınlatma",
+          "text": "ışık lamba fener gece aydınlatma karanlık ortam kamp ışığı",
+          "score": 0.923
+        }
+      }
+    },
+    {
+      "id": "Q002",
+      "query": "kamp için uyku ürünü lazım",
+      "expected": {
+        "main_category": "Kamp",
+        "product_types_any": [
+          "Uyku Tulumu",
+          "Kamp Matı",
+          "Uyku Yastığı",
+          "Şişme Yatak"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Kışlık Uyku Tulumu Ekstra Sıcak",
+          "main_category": "Kamp",
+          "sub_category": "Uyku",
+          "target_group": "Unisex",
+          "product_type": "Uyku Tulumu",
+          "match_percent": 96
+        },
+        {
+          "name": "Kamp Matı",
+          "main_category": "Kamp",
+          "sub_category": "Uyku",
+          "target_group": "Unisex",
+          "product_type": "Kamp Matı",
+          "match_percent": 96
+        },
+        {
+          "name": "Yazlık Uyku Tulumu Kompakt",
+          "main_category": "Kamp",
+          "sub_category": "Uyku",
+          "target_group": "Unisex",
+          "product_type": "Uyku Tulumu",
+          "match_percent": 96
+        },
+        {
+          "name": "Uyku Tulumu Yazlık",
+          "main_category": "Kamp",
+          "sub_category": "Uyku",
+          "target_group": "Unisex",
+          "product_type": "Uyku Tulumu",
+          "match_percent": 96
+        },
+        {
+          "name": "Şişme Kamp Matı",
+          "main_category": "Kamp",
+          "sub_category": "Uyku",
+          "target_group": "Unisex",
+          "product_type": "Şişme Kamp Matı",
+          "match_percent": 96
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Kamp",
+        "sub_category": "Uyku",
+        "product_type": null,
+        "target_group": null,
+        "features": [
+          "uyku",
+          "mat",
+          "sıcak",
+          "tulum"
+        ],
+        "contexts": [
+          "kamp"
+        ],
+        "taxonomy_match": {
+          "field": "sub_category",
+          "value": "Uyku",
+          "text": "uyku uyumak yatmak uyku tulumu mat kamp uykusu gece dinlenme",
+          "score": 0.905
+        }
+      }
+    },
+    {
+      "id": "Q003",
+      "query": "kamp için yemek yapacak bir şey lazım",
+      "expected": {
+        "main_category": "Kamp",
+        "product_types_any": [
+          "Kamp Ocağı",
+          "Kamp Bardağı",
+          "Termos"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Gazlı Kamp Ocağı",
+          "main_category": "Kamp",
+          "sub_category": "Pişirme",
+          "target_group": "Unisex",
+          "product_type": "Kamp Ocağı",
+          "match_percent": 87
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Kamp",
+        "sub_category": "Pişirme",
+        "product_type": "Kamp Ocağı",
+        "target_group": null,
+        "features": [
+          "ocak",
+          "kamp ocağı",
+          "pişirme",
+          "yemek yapma"
+        ],
+        "contexts": [
+          "kamp"
+        ],
+        "taxonomy_match": {
+          "field": "sub_category",
+          "value": "Pişirme",
+          "text": "yemek yapmak pişirme ocak kamp ocağı açık hava mutfak yemek hazırlama",
+          "score": 0.719
+        }
+      }
+    },
+    {
+      "id": "Q004",
+      "query": "telefon için taşınabilir şarj lazım",
+      "expected": {
+        "main_category": "Elektronik",
+        "product_types_any": [
+          "Powerbank",
+          "Kablosuz Şarj",
+          "Şarj Adaptörü"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Powerbank 20000mAh",
+          "main_category": "Elektronik",
+          "sub_category": "Aksesuar",
+          "target_group": "Unisex",
+          "product_type": "Powerbank",
+          "match_percent": 96
+        },
+        {
+          "name": "Manyetik Kablosuz Powerbank",
+          "main_category": "Elektronik",
+          "sub_category": "Telefon Aksesuarı",
+          "target_group": "Unisex",
+          "product_type": "Powerbank",
+          "match_percent": 96
+        },
+        {
+          "name": "Powerbank 30000mAh",
+          "main_category": "Elektronik",
+          "sub_category": "Telefon Aksesuarı",
+          "target_group": "Unisex",
+          "product_type": "Powerbank",
+          "match_percent": 96
+        },
+        {
+          "name": "Powerbank 10000mAh",
+          "main_category": "Elektronik",
+          "sub_category": "Telefon Aksesuarı",
+          "target_group": "Unisex",
+          "product_type": "Powerbank",
+          "match_percent": 96
+        },
+        {
+          "name": "Mini Powerbank 5000mAh",
+          "main_category": "Elektronik",
+          "sub_category": "Telefon Aksesuarı",
+          "target_group": "Unisex",
+          "product_type": "Powerbank",
+          "match_percent": 96
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Elektronik",
+        "sub_category": null,
+        "product_type": "Powerbank",
+        "target_group": null,
+        "features": [],
+        "contexts": [],
+        "taxonomy_match": {
+          "field": "product_type",
+          "value": "Powerbank",
+          "text": "telefon şarj taşınabilir şarj cihazı powerbank batarya hızlı şarj",
+          "score": 0.876
+        }
+      }
+    },
+    {
+      "id": "Q005",
+      "query": "yağmurlu havalar için kadın ayakkabı",
+      "expected": {
+        "main_category": "Ayakkabı",
+        "target_group": "Kadın",
+        "product_types_any": [
+          "Yağmur Botu",
+          "Bot",
+          "Spor Ayakkabı"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Kadın Yağmur Botu",
+          "main_category": "Ayakkabı",
+          "sub_category": "Bot",
+          "target_group": "Kadın",
+          "product_type": "Yağmur Botu",
+          "match_percent": 92
+        },
+        {
+          "name": "Kadın Kışlık Bot",
+          "main_category": "Ayakkabı",
+          "sub_category": "Bot",
+          "target_group": "Kadın",
+          "product_type": "Bot",
+          "match_percent": 91
+        },
+        {
+          "name": "Kadın Su Geçirmez Yağmur Botu",
+          "main_category": "Ayakkabı",
+          "sub_category": "Bot",
+          "target_group": "Kadın",
+          "product_type": "Bot",
+          "match_percent": 89
+        },
+        {
+          "name": "Kadın Su Geçirmez Bot",
+          "main_category": "Ayakkabı",
+          "sub_category": "Bot",
+          "target_group": "Kadın",
+          "product_type": "Bot",
+          "match_percent": 88
+        },
+        {
+          "name": "Kadın Kışlık Kar Botu",
+          "main_category": "Ayakkabı",
+          "sub_category": "Bot",
+          "target_group": "Kadın",
+          "product_type": "Kar Botu",
+          "match_percent": 87
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Ayakkabı",
+        "sub_category": "Bot",
+        "product_type": null,
+        "target_group": "Kadın",
+        "features": [
+          "su geçirmez",
+          "yağmurlu hava",
+          "suya dayanıklı"
+        ],
+        "contexts": [
+          "yagmurlu",
+          "yağmurlu"
+        ],
+        "taxonomy_match": {
+          "field": "sub_category",
+          "value": "Bot",
+          "text": "bot kışlık ayakkabı yağmur su geçirmez outdoor sağlam taban",
+          "score": 0.818
+        }
+      }
+    },
+    {
+      "id": "Q006",
+      "query": "kadın yazlık elbise",
+      "expected": {
+        "main_category": "Giyim",
+        "sub_category": "Elbise",
+        "target_group": "Kadın",
+        "product_types_any": [
+          "Yazlık",
+          "Yazlık Elbise",
+          "Mini Elbise",
+          "Midi Elbise"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Kadın Yazlık Elbise",
+          "main_category": "Giyim",
+          "sub_category": "Elbise",
+          "target_group": "Kadın",
+          "product_type": "Yazlık",
+          "match_percent": 96
+        },
+        {
+          "name": "Kadın Çiçekli Elbise",
+          "main_category": "Giyim",
+          "sub_category": "Elbise",
+          "target_group": "Kadın",
+          "product_type": "Yazlık Elbise",
+          "match_percent": 96
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Giyim",
+        "sub_category": "Elbise",
+        "product_type": "Yazlık",
+        "target_group": "Kadın",
+        "features": [
+          "hafif",
+          "yazlık",
+          "nefes alabilir"
+        ],
+        "contexts": [],
+        "taxonomy_match": {
+          "field": "product_type",
+          "value": "Yazlık",
+          "text": "yazlık hafif yaz aylarında kullanılan günlük rahat elbise",
+          "score": 0.886
+        }
+      }
+    },
+    {
+      "id": "Q007",
+      "query": "özel gün için kadın elbise",
+      "expected": {
+        "main_category": "Giyim",
+        "sub_category": "Elbise",
+        "target_group": "Kadın",
+        "product_types_any": [
+          "Abiye",
+          "Maxi Elbise",
+          "Midi Elbise"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Kadın Abiye Elbise",
+          "main_category": "Giyim",
+          "sub_category": "Elbise",
+          "target_group": "Kadın",
+          "product_type": "Abiye",
+          "match_percent": 96
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Giyim",
+        "sub_category": "Elbise",
+        "product_type": "Abiye",
+        "target_group": "Kadın",
+        "features": [],
+        "contexts": [],
+        "taxonomy_match": {
+          "field": "product_type",
+          "value": "Abiye",
+          "text": "özel gün davet düğün nişan şık uzun abiye gece elbisesi",
+          "score": 0.857
+        }
+      }
+    },
+    {
+      "id": "Q008",
+      "query": "soğuk havalar için mont",
+      "expected": {
+        "main_category": "Giyim",
+        "sub_category": "Mont",
+        "product_types_any": [
+          "Şişme Mont",
+          "Polar Mont",
+          "Yağmurluk Mont"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Polar Mont",
+          "main_category": "Giyim",
+          "sub_category": "Mont",
+          "target_group": "Unisex",
+          "product_type": "Polar Mont",
+          "match_percent": 96
+        },
+        {
+          "name": "Polar Mont Unisex",
+          "main_category": "Giyim",
+          "sub_category": "Mont",
+          "target_group": "Unisex",
+          "product_type": "Polar Mont",
+          "match_percent": 93
+        },
+        {
+          "name": "Kadın Şişme Mont",
+          "main_category": "Giyim",
+          "sub_category": "Mont",
+          "target_group": "Kadın",
+          "product_type": "Şişme Mont",
+          "match_percent": 93
+        },
+        {
+          "name": "Erkek Kaban",
+          "main_category": "Giyim",
+          "sub_category": "Mont",
+          "target_group": "Erkek",
+          "product_type": "Kaban",
+          "match_percent": 81
+        },
+        {
+          "name": "Kadın Kışlık Kaban",
+          "main_category": "Giyim",
+          "sub_category": "Mont",
+          "target_group": "Kadın",
+          "product_type": "Kaban",
+          "match_percent": 80
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Giyim",
+        "sub_category": "Mont",
+        "product_type": null,
+        "target_group": null,
+        "features": [
+          "kışlık",
+          "sıcak"
+        ],
+        "contexts": [],
+        "taxonomy_match": {
+          "field": "sub_category",
+          "value": "Mont",
+          "text": "mont yağmurluk polar soğuk hava kışlık sıcak tutan dış giyim",
+          "score": 0.772
+        }
+      }
+    },
+    {
+      "id": "Q009",
+      "query": "bilgisayar için kablosuz mouse",
+      "expected": {
+        "main_category": "Elektronik",
+        "sub_category": "Bilgisayar",
+        "product_types_any": [
+          "Mouse",
+          "Oyuncu Mouse"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Kablosuz Mouse",
+          "main_category": "Elektronik",
+          "sub_category": "Bilgisayar",
+          "target_group": "Unisex",
+          "product_type": "Mouse",
+          "match_percent": 96
+        },
+        {
+          "name": "Kablosuz Mouse Sessiz",
+          "main_category": "Elektronik",
+          "sub_category": "Bilgisayar",
+          "target_group": "Unisex",
+          "product_type": "Mouse",
+          "match_percent": 96
+        },
+        {
+          "name": "Ergonomik Dikey Mouse",
+          "main_category": "Elektronik",
+          "sub_category": "Bilgisayar",
+          "target_group": "Unisex",
+          "product_type": "Mouse",
+          "match_percent": 96
+        },
+        {
+          "name": "Kablosuz Oyuncu Mouse",
+          "main_category": "Elektronik",
+          "sub_category": "Bilgisayar",
+          "target_group": "Unisex",
+          "product_type": "Oyuncu Mouse",
+          "match_percent": 96
+        },
+        {
+          "name": "Kablosuz Klavye Mouse Set",
+          "main_category": "Elektronik",
+          "sub_category": "Bilgisayar",
+          "target_group": "Unisex",
+          "product_type": "Klavye Mouse Set",
+          "match_percent": 96
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Elektronik",
+        "sub_category": "Bilgisayar",
+        "product_type": "Mouse",
+        "target_group": null,
+        "features": [],
+        "contexts": [],
+        "taxonomy_match": {
+          "field": "product_type",
+          "value": "Mouse",
+          "text": "mouse kablosuz fare bilgisayar ergonomik sessiz",
+          "score": 0.807
+        }
+      }
+    },
+    {
+      "id": "Q010",
+      "query": "oyun için klavye",
+      "expected": {
+        "main_category": "Elektronik",
+        "sub_category": "Bilgisayar",
+        "product_types_any": [
+          "Klavye",
+          "Klavye Mouse Set"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Mekanik Klavye",
+          "main_category": "Elektronik",
+          "sub_category": "Bilgisayar",
+          "target_group": "Unisex",
+          "product_type": "Klavye",
+          "match_percent": 96
+        },
+        {
+          "name": "Mekanik Oyuncu Klavyesi",
+          "main_category": "Elektronik",
+          "sub_category": "Bilgisayar",
+          "target_group": "Unisex",
+          "product_type": "Klavye",
+          "match_percent": 96
+        },
+        {
+          "name": "Kablosuz Klavye Mouse Set",
+          "main_category": "Elektronik",
+          "sub_category": "Bilgisayar",
+          "target_group": "Unisex",
+          "product_type": "Klavye Mouse Set",
+          "match_percent": 93
+        },
+        {
+          "name": "Sessiz Kablosuz Klavye",
+          "main_category": "Elektronik",
+          "sub_category": "Bilgisayar",
+          "target_group": "Unisex",
+          "product_type": "Klavye",
+          "match_percent": 90
+        },
+        {
+          "name": "Sessiz Ofis Klavyesi",
+          "main_category": "Elektronik",
+          "sub_category": "Bilgisayar",
+          "target_group": "Unisex",
+          "product_type": "Klavye",
+          "match_percent": 89
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Elektronik",
+        "sub_category": "Bilgisayar",
+        "product_type": "Klavye",
+        "target_group": null,
+        "features": [],
+        "contexts": [],
+        "taxonomy_match": {
+          "field": "product_type",
+          "value": "Klavye",
+          "text": "klavye mekanik oyuncu gaming rgb bilgisayar yazı yazma",
+          "score": 0.743
+        }
+      }
+    },
+    {
+      "id": "Q011",
+      "query": "spor için akıllı saat",
+      "expected": {
+        "main_category": "Elektronik",
+        "product_types_any": [
+          "Akıllı Saat"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Akıllı Saat Spor",
+          "main_category": "Elektronik",
+          "sub_category": "Giyilebilir Teknoloji",
+          "target_group": "Unisex",
+          "product_type": "Akıllı Saat",
+          "match_percent": 96
+        },
+        {
+          "name": "Akıllı Saat",
+          "main_category": "Elektronik",
+          "sub_category": "Giyilebilir Teknoloji",
+          "target_group": "Unisex",
+          "product_type": "Akıllı Saat",
+          "match_percent": 96
+        },
+        {
+          "name": "Akıllı Saat Erkek Outdoor",
+          "main_category": "Elektronik",
+          "sub_category": "Giyilebilir Teknoloji",
+          "target_group": "Erkek",
+          "product_type": "Akıllı Saat",
+          "match_percent": 89
+        },
+        {
+          "name": "Akıllı Saat Kadın İnce Tasarım",
+          "main_category": "Elektronik",
+          "sub_category": "Giyilebilir Teknoloji",
+          "target_group": "Kadın",
+          "product_type": "Akıllı Saat",
+          "match_percent": 86
+        },
+        {
+          "name": "Akıllı Saat Çocuk GPS",
+          "main_category": "Elektronik",
+          "sub_category": "Giyilebilir Teknoloji",
+          "target_group": "Çocuk",
+          "product_type": "Akıllı Saat",
+          "match_percent": 83
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Elektronik",
+        "sub_category": "Giyilebilir Teknoloji",
+        "product_type": "Akıllı Saat",
+        "target_group": null,
+        "features": [
+          "rahat",
+          "spor"
+        ],
+        "contexts": [
+          "spor"
+        ],
+        "taxonomy_match": {
+          "field": "product_type",
+          "value": "Akıllı Saat",
+          "text": "akıllı saat spor takibi bildirim giyilebilir teknoloji saat nabız oksijen",
+          "score": 0.753
+        }
+      }
+    },
+    {
+      "id": "Q012",
+      "query": "saç dökülmesi için şampuan öner",
+      "expected": {
+        "main_category": "Kişisel Bakım",
+        "sub_category": "Saç Bakımı",
+        "product_types_any": [
+          "Şampuan"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Dökülme Karşıtı Şampuan",
+          "main_category": "Kişisel Bakım",
+          "sub_category": "Saç Bakımı",
+          "target_group": "Unisex",
+          "product_type": "Şampuan",
+          "match_percent": 96
+        },
+        {
+          "name": "Dökülme Karşıtı Biotin Şampuan",
+          "main_category": "Kişisel Bakım",
+          "sub_category": "Saç Bakımı",
+          "target_group": "Unisex",
+          "product_type": "Şampuan",
+          "match_percent": 96
+        },
+        {
+          "name": "Keratin Onarıcı Şampuan",
+          "main_category": "Kişisel Bakım",
+          "sub_category": "Saç Bakımı",
+          "target_group": "Unisex",
+          "product_type": "Şampuan",
+          "match_percent": 96
+        },
+        {
+          "name": "Biotin Destekli Şampuan",
+          "main_category": "Kişisel Bakım",
+          "sub_category": "Saç Bakımı",
+          "target_group": "Unisex",
+          "product_type": "Şampuan",
+          "match_percent": 87
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Kişisel Bakım",
+        "sub_category": "Saç Bakımı",
+        "product_type": "Şampuan",
+        "target_group": null,
+        "features": [
+          "saç dökülmesi",
+          "güçlendirici",
+          "dökülme karşıtı"
+        ],
+        "contexts": [],
+        "taxonomy_match": {
+          "field": "sub_category",
+          "value": "Saç Bakımı",
+          "text": "saç bakımı şampuan saç kremi serum saç dökülmesi kepek kuru saç yağlı saç",
+          "score": 0.851
+        }
+      }
+    },
+    {
+      "id": "Q013",
+      "query": "kepek için şampuan öner",
+      "expected": {
+        "main_category": "Kişisel Bakım",
+        "sub_category": "Saç Bakımı",
+        "product_types_any": [
+          "Şampuan"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Kepek Karşıtı Şampuan",
+          "main_category": "Kişisel Bakım",
+          "sub_category": "Saç Bakımı",
+          "target_group": "Unisex",
+          "product_type": "Şampuan",
+          "match_percent": 92
+        },
+        {
+          "name": "Kepek Karşıtı Şampuan Çinko",
+          "main_category": "Kişisel Bakım",
+          "sub_category": "Saç Bakımı",
+          "target_group": "Unisex",
+          "product_type": "Şampuan",
+          "match_percent": 89
+        },
+        {
+          "name": "Kepek Karşıtı Mentollü Şampuan",
+          "main_category": "Kişisel Bakım",
+          "sub_category": "Saç Bakımı",
+          "target_group": "Unisex",
+          "product_type": "Şampuan",
+          "match_percent": 88
+        },
+        {
+          "name": "Kepekli Saçlar İçin Bakım Şampuanı",
+          "main_category": "Kişisel Bakım",
+          "sub_category": "Saç Bakımı",
+          "target_group": "Unisex",
+          "product_type": "Şampuan",
+          "match_percent": 85
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Kişisel Bakım",
+        "sub_category": "Saç Bakımı",
+        "product_type": "Şampuan",
+        "target_group": null,
+        "features": [
+          "kepek karşıtı",
+          "kepek"
+        ],
+        "contexts": [],
+        "taxonomy_match": null
+      }
+    },
+    {
+      "id": "Q014",
+      "query": "yağlı saç için şampuan",
+      "expected": {
+        "main_category": "Kişisel Bakım",
+        "sub_category": "Saç Bakımı",
+        "product_types_any": [
+          "Şampuan"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Yağlı Saç Şampuanı",
+          "main_category": "Kişisel Bakım",
+          "sub_category": "Saç Bakımı",
+          "target_group": "Unisex",
+          "product_type": "Şampuan",
+          "match_percent": 96
+        },
+        {
+          "name": "Yağlı Saçlar İçin Kuru Şampuan",
+          "main_category": "Kişisel Bakım",
+          "sub_category": "Saç Bakımı",
+          "target_group": "Unisex",
+          "product_type": "Kuru Şampuan",
+          "match_percent": 96
+        },
+        {
+          "name": "Yağlı Saç Dengeleyici Şampuan",
+          "main_category": "Kişisel Bakım",
+          "sub_category": "Saç Bakımı",
+          "target_group": "Unisex",
+          "product_type": "Şampuan",
+          "match_percent": 93
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Kişisel Bakım",
+        "sub_category": "Saç Bakımı",
+        "product_type": "Şampuan",
+        "target_group": null,
+        "features": [
+          "yağlı saç",
+          "yağ dengeleyici"
+        ],
+        "contexts": [],
+        "taxonomy_match": {
+          "field": "sub_category",
+          "value": "Saç Bakımı",
+          "text": "saç bakımı şampuan saç kremi serum saç dökülmesi kepek kuru saç yağlı saç",
+          "score": 0.868
+        }
+      }
+    },
+    {
+      "id": "Q015",
+      "query": "kuru cilt için nemlendirici",
+      "expected": {
+        "main_category": "Kişisel Bakım",
+        "sub_category": "Cilt Bakımı",
+        "product_types_any": [
+          "Nemlendirici",
+          "Vücut Losyonu"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Hassas Cilt Nemlendiricisi",
+          "main_category": "Kişisel Bakım",
+          "sub_category": "Cilt Bakımı",
+          "target_group": "Unisex",
+          "product_type": "Nemlendirici",
+          "match_percent": 95
+        },
+        {
+          "name": "Nemlendirici Yüz Kremi",
+          "main_category": "Kişisel Bakım",
+          "sub_category": "Cilt Bakımı",
+          "target_group": "Kadın",
+          "product_type": "Nemlendirici",
+          "match_percent": 91
+        },
+        {
+          "name": "Aloe Vera Nemlendirici Jel",
+          "main_category": "Kişisel Bakım",
+          "sub_category": "Cilt Bakımı",
+          "target_group": "Unisex",
+          "product_type": "Nemlendirici",
+          "match_percent": 77
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Kişisel Bakım",
+        "sub_category": "Cilt Bakımı",
+        "product_type": "Nemlendirici",
+        "target_group": null,
+        "features": [
+          "nemlendirici",
+          "onarıcı",
+          "kuru cilt"
+        ],
+        "contexts": [],
+        "taxonomy_match": {
+          "field": "sub_category",
+          "value": "Cilt Bakımı",
+          "text": "cilt bakımı nemlendirici temizleyici yağlı cilt kuru cilt hassas cilt",
+          "score": 0.855
+        }
+      }
+    },
+    {
+      "id": "Q016",
+      "query": "yağlı cilt için temizleyici",
+      "expected": {
+        "main_category": "Kişisel Bakım",
+        "sub_category": "Cilt Bakımı",
+        "product_types_any": [
+          "Temizleyici",
+          "Tonik",
+          "Peeling"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Yağ Dengeleyici Yüz Jeli",
+          "main_category": "Kişisel Bakım",
+          "sub_category": "Cilt Bakımı",
+          "target_group": "Unisex",
+          "product_type": "Temizleyici",
+          "match_percent": 96
+        },
+        {
+          "name": "Yüz Yıkama Köpüğü",
+          "main_category": "Kişisel Bakım",
+          "sub_category": "Cilt Bakımı",
+          "target_group": "Unisex",
+          "product_type": "Temizleyici",
+          "match_percent": 96
+        },
+        {
+          "name": "Akne Karşıtı Yüz Temizleme Jeli",
+          "main_category": "Kişisel Bakım",
+          "sub_category": "Cilt Bakımı",
+          "target_group": "Unisex",
+          "product_type": "Temizleyici",
+          "match_percent": 91
+        },
+        {
+          "name": "Micellar Su",
+          "main_category": "Kişisel Bakım",
+          "sub_category": "Cilt Bakımı",
+          "target_group": "Unisex",
+          "product_type": "Temizleyici",
+          "match_percent": 85
+        },
+        {
+          "name": "Makyaj Temizleme Balmı",
+          "main_category": "Kişisel Bakım",
+          "sub_category": "Cilt Bakımı",
+          "target_group": "Kadın",
+          "product_type": "Temizleyici",
+          "match_percent": 84
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Kişisel Bakım",
+        "sub_category": "Cilt Bakımı",
+        "product_type": "Temizleyici",
+        "target_group": null,
+        "features": [
+          "mat",
+          "yağ dengeleyici",
+          "yağlı cilt"
+        ],
+        "contexts": [],
+        "taxonomy_match": {
+          "field": "sub_category",
+          "value": "Cilt Bakımı",
+          "text": "cilt bakımı nemlendirici temizleyici yağlı cilt kuru cilt hassas cilt",
+          "score": 0.933
+        }
+      }
+    },
+    {
+      "id": "Q017",
+      "query": "bebek için pişik kremi",
+      "expected": {
+        "main_category": "Anne & Bebek",
+        "sub_category": "Bakım",
+        "product_types_any": [
+          "Pişik Kremi"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Pişik Kremi Çinko Oksitli",
+          "main_category": "Anne & Bebek",
+          "sub_category": "Bakım",
+          "target_group": "Bebek",
+          "product_type": "Pişik Kremi",
+          "match_percent": 96
+        },
+        {
+          "name": "Pişik Kremi Hassas Cilt",
+          "main_category": "Anne & Bebek",
+          "sub_category": "Bakım",
+          "target_group": "Bebek",
+          "product_type": "Pişik Kremi",
+          "match_percent": 96
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Anne & Bebek",
+        "sub_category": "Bakım",
+        "product_type": "Pişik Kremi",
+        "target_group": "Bebek",
+        "features": [],
+        "contexts": [],
+        "taxonomy_match": {
+          "field": "main_category",
+          "value": "Anne & Bebek",
+          "text": "anne bebek çocuk bebek bakımı emzik mama yenidoğan hamile pişik kremi",
+          "score": 0.861
+        }
+      }
+    },
+    {
+      "id": "Q018",
+      "query": "mutfak için kahve makinesi",
+      "expected": {
+        "main_category": "Mutfak",
+        "sub_category": "Küçük Ev Aleti",
+        "product_types_any": [
+          "Kahve Makinesi",
+          "Türk Kahvesi Makinesi"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Kahve Makinesi Filtre",
+          "main_category": "Mutfak",
+          "sub_category": "Küçük Ev Aleti",
+          "target_group": "Unisex",
+          "product_type": "Kahve Makinesi",
+          "match_percent": 96
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Mutfak",
+        "sub_category": "Küçük Ev Aleti",
+        "product_type": "Kahve Makinesi",
+        "target_group": null,
+        "features": [],
+        "contexts": [],
+        "taxonomy_match": {
+          "field": "main_category",
+          "value": "Mutfak",
+          "text": "mutfak pişirme yemek blender mikser kahve makinesi çaycı ocak",
+          "score": 0.785
+        }
+      }
+    },
+    {
+      "id": "Q019",
+      "query": "ofis için ergonomik mouse",
+      "expected": {
+        "main_category": "Elektronik",
+        "sub_category": "Bilgisayar",
+        "product_types_any": [
+          "Mouse",
+          "Oyuncu Mouse"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Ergonomik Dikey Mouse",
+          "main_category": "Elektronik",
+          "sub_category": "Bilgisayar",
+          "target_group": "Unisex",
+          "product_type": "Mouse",
+          "match_percent": 96
+        },
+        {
+          "name": "Kablosuz Mouse",
+          "main_category": "Elektronik",
+          "sub_category": "Bilgisayar",
+          "target_group": "Unisex",
+          "product_type": "Mouse",
+          "match_percent": 96
+        },
+        {
+          "name": "Kablosuz Mouse Sessiz",
+          "main_category": "Elektronik",
+          "sub_category": "Bilgisayar",
+          "target_group": "Unisex",
+          "product_type": "Mouse",
+          "match_percent": 96
+        },
+        {
+          "name": "Kablosuz Klavye Mouse Set",
+          "main_category": "Elektronik",
+          "sub_category": "Bilgisayar",
+          "target_group": "Unisex",
+          "product_type": "Klavye Mouse Set",
+          "match_percent": 95
+        },
+        {
+          "name": "Oyuncu Mouse RGB",
+          "main_category": "Elektronik",
+          "sub_category": "Bilgisayar",
+          "target_group": "Unisex",
+          "product_type": "Oyuncu Mouse",
+          "match_percent": 95
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Elektronik",
+        "sub_category": "Bilgisayar",
+        "product_type": "Mouse",
+        "target_group": null,
+        "features": [],
+        "contexts": [
+          "ofis"
+        ],
+        "taxonomy_match": {
+          "field": "product_type",
+          "value": "Mouse",
+          "text": "mouse kablosuz fare bilgisayar ergonomik sessiz",
+          "score": 0.8
+        }
+      }
+    },
+    {
+      "id": "Q020",
+      "query": "araç için telefon şarj cihazı",
+      "expected": {
+        "main_category": "Otomotiv",
+        "sub_category": "Elektronik",
+        "product_types_any": [
+          "Araç Şarj Cihazı"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Araç Şarj Cihazı PD 30W",
+          "main_category": "Otomotiv",
+          "sub_category": "Elektronik",
+          "target_group": "Unisex",
+          "product_type": "Araç Şarj Cihazı",
+          "match_percent": 96
+        },
+        {
+          "name": "Araç Şarj Cihazı Çift USB",
+          "main_category": "Otomotiv",
+          "sub_category": "Elektronik",
+          "target_group": "Unisex",
+          "product_type": "Araç Şarj Cihazı",
+          "match_percent": 95
+        },
+        {
+          "name": "Araç Şarj Cihazı Type-C Hızlı",
+          "main_category": "Otomotiv",
+          "sub_category": "Elektronik",
+          "target_group": "Unisex",
+          "product_type": "Araç Şarj Cihazı",
+          "match_percent": 94
+        },
+        {
+          "name": "Araç Şarj Cihazı Çift Port",
+          "main_category": "Otomotiv",
+          "sub_category": "Elektronik",
+          "target_group": "Unisex",
+          "product_type": "Araç Şarj Cihazı",
+          "match_percent": 93
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Otomotiv",
+        "sub_category": "Elektronik",
+        "product_type": "Araç Şarj Cihazı",
+        "target_group": null,
+        "features": [
+          "araç",
+          "araba",
+          "otomotiv"
+        ],
+        "contexts": [],
+        "taxonomy_match": {
+          "field": "product_type",
+          "value": "Powerbank",
+          "text": "telefon şarj taşınabilir şarj cihazı powerbank batarya hızlı şarj",
+          "score": 0.856
+        }
+      }
+    },
+    {
+      "id": "Q021",
+      "query": "ev için dekoratif lamba",
+      "expected": {
+        "main_category": "Ev & Yaşam",
+        "sub_category": "Aydınlatma",
+        "product_types_any": [
+          "Masa Lambası",
+          "Gece Lambası",
+          "Solar Lamba",
+          "Perde Işık",
+          "Dekoratif Lamba"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Dekoratif Lamba Ahşap",
+          "main_category": "Ev & Yaşam",
+          "sub_category": "Aydınlatma",
+          "target_group": "Unisex",
+          "product_type": "Dekoratif Lamba",
+          "match_percent": 96
+        },
+        {
+          "name": "Dekoratif Lamba Minimal",
+          "main_category": "Ev & Yaşam",
+          "sub_category": "Aydınlatma",
+          "target_group": "Unisex",
+          "product_type": "Dekoratif Lamba",
+          "match_percent": 96
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Ev & Yaşam",
+        "sub_category": "Aydınlatma",
+        "product_type": "Dekoratif Lamba",
+        "target_group": null,
+        "features": [
+          "dekoratif",
+          "lamba",
+          "dekorasyon",
+          "ışık",
+          "aydınlatma",
+          "süsleme"
+        ],
+        "contexts": [],
+        "taxonomy_match": {
+          "field": "product_type",
+          "value": "Dekoratif Lamba",
+          "text": "dekoratif lamba ahşap süsleme ışık dekor ambient aydınlatma",
+          "score": 0.901
+        }
+      }
+    },
+    {
+      "id": "Q022",
+      "query": "spor için dambıl",
+      "expected": {
+        "main_category": "Spor",
+        "sub_category": "Fitness",
+        "product_types_any": [
+          "Dambıl",
+          "Dambıl Seti",
+          "Kettlebell"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Dambıl Seti 10 kg",
+          "main_category": "Spor",
+          "sub_category": "Fitness",
+          "target_group": "Unisex",
+          "product_type": "Dambıl",
+          "match_percent": 80
+        },
+        {
+          "name": "Dambıl Seti Kauçuk 10 kg",
+          "main_category": "Spor",
+          "sub_category": "Fitness",
+          "target_group": "Unisex",
+          "product_type": "Dambıl Seti",
+          "match_percent": 78
+        },
+        {
+          "name": "Dambıl Seti 5-20 kg",
+          "main_category": "Spor",
+          "sub_category": "Fitness",
+          "target_group": "Unisex",
+          "product_type": "Dambıl Seti",
+          "match_percent": 75
+        },
+        {
+          "name": "Dambıl Seti Ayarlanabilir 20 kg",
+          "main_category": "Spor",
+          "sub_category": "Fitness",
+          "target_group": "Unisex",
+          "product_type": "Dambıl Seti",
+          "match_percent": 74
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Spor",
+        "sub_category": "Fitness",
+        "product_type": "Dambıl",
+        "target_group": null,
+        "features": [
+          "rahat",
+          "spor"
+        ],
+        "contexts": [
+          "spor"
+        ],
+        "taxonomy_match": null
+      }
+    },
+    {
+      "id": "Q023",
+      "query": "yoga için mat",
+      "expected": {
+        "main_category": "Spor",
+        "product_types_any": [
+          "Yoga Matı",
+          "Kamp Matı"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Yoga Matı Kalın 10mm",
+          "main_category": "Spor",
+          "sub_category": "Yoga",
+          "target_group": "Unisex",
+          "product_type": "Yoga Matı",
+          "match_percent": 96
+        },
+        {
+          "name": "Yoga Matı",
+          "main_category": "Spor",
+          "sub_category": "Egzersiz",
+          "target_group": "Unisex",
+          "product_type": "Yoga Matı",
+          "match_percent": 96
+        },
+        {
+          "name": "Yoga Matı Kaymaz",
+          "main_category": "Spor",
+          "sub_category": "Yoga",
+          "target_group": "Unisex",
+          "product_type": "Yoga Matı",
+          "match_percent": 96
+        },
+        {
+          "name": "Yoga Matı Doğal Kauçuk",
+          "main_category": "Spor",
+          "sub_category": "Yoga",
+          "target_group": "Unisex",
+          "product_type": "Yoga Matı",
+          "match_percent": 96
+        },
+        {
+          "name": "Yoga Matı Katlanabilir",
+          "main_category": "Spor",
+          "sub_category": "Yoga",
+          "target_group": "Unisex",
+          "product_type": "Yoga Matı",
+          "match_percent": 96
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Spor",
+        "sub_category": null,
+        "product_type": "Yoga Matı",
+        "target_group": null,
+        "features": [
+          "yoga",
+          "mat",
+          "kaymaz"
+        ],
+        "contexts": [],
+        "taxonomy_match": {
+          "field": "product_type",
+          "value": "Yoga Matı",
+          "text": "yoga matı kaymaz yüzey yoga egzersiz spor mat pilates",
+          "score": 0.907
+        }
+      }
+    },
+    {
+      "id": "Q024",
+      "query": "kamp için çadır",
+      "expected": {
+        "main_category": "Kamp",
+        "sub_category": "Çadır",
+        "product_types_any": [
+          "Kamp Çadırı",
+          "Ultra Hafif Çadır"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Kamp Çadırı 2 Kişilik",
+          "main_category": "Kamp",
+          "sub_category": "Çadır",
+          "target_group": "Unisex",
+          "product_type": "Kamp Çadırı",
+          "match_percent": 96
+        },
+        {
+          "name": "Kamp Çadırı 4 Kişilik",
+          "main_category": "Kamp",
+          "sub_category": "Çadır",
+          "target_group": "Unisex",
+          "product_type": "Kamp Çadırı",
+          "match_percent": 96
+        },
+        {
+          "name": "Aile Kamp Çadırı 6 Kişilik",
+          "main_category": "Kamp",
+          "sub_category": "Çadır",
+          "target_group": "Unisex",
+          "product_type": "Kamp Çadırı",
+          "match_percent": 96
+        },
+        {
+          "name": "Kamp Çadırı 3 Kişilik",
+          "main_category": "Kamp",
+          "sub_category": "Çadır",
+          "target_group": "Unisex",
+          "product_type": "Kamp Çadırı",
+          "match_percent": 96
+        },
+        {
+          "name": "Ultra Hafif Çadır",
+          "main_category": "Kamp",
+          "sub_category": "Çadır",
+          "target_group": "Unisex",
+          "product_type": "Ultra Hafif Çadır",
+          "match_percent": 96
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Kamp",
+        "sub_category": "Çadır",
+        "product_type": null,
+        "target_group": null,
+        "features": [],
+        "contexts": [
+          "kamp"
+        ],
+        "taxonomy_match": {
+          "field": "main_category",
+          "value": "Kamp",
+          "text": "kamp outdoor doğa çadır kamp ekipmanı kamp malzemeleri açık hava",
+          "score": 0.87
+        }
+      }
+    },
+    {
+      "id": "Q025",
+      "query": "yazlık erkek ayakkabı",
+      "expected": {
+        "main_category": "Ayakkabı",
+        "target_group": "Erkek",
+        "product_types_any": [
+          "Sandalet",
+          "Sneaker",
+          "Spor Ayakkabı"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Erkek Rahat Taban Sneaker",
+          "main_category": "Ayakkabı",
+          "sub_category": "Sneaker",
+          "target_group": "Erkek",
+          "product_type": "Sneaker",
+          "match_percent": 96
+        },
+        {
+          "name": "Erkek Beyaz Günlük Sneaker",
+          "main_category": "Ayakkabı",
+          "sub_category": "Sneaker",
+          "target_group": "Erkek",
+          "product_type": "Sneaker",
+          "match_percent": 96
+        },
+        {
+          "name": "Erkek Günlük Sneaker",
+          "main_category": "Ayakkabı",
+          "sub_category": "Sneaker",
+          "target_group": "Erkek",
+          "product_type": "Sneaker",
+          "match_percent": 96
+        },
+        {
+          "name": "Erkek Sneaker Günlük",
+          "main_category": "Ayakkabı",
+          "sub_category": "Sneaker",
+          "target_group": "Erkek",
+          "product_type": "Sneaker",
+          "match_percent": 96
+        },
+        {
+          "name": "Erkek Slip-On Sneaker",
+          "main_category": "Ayakkabı",
+          "sub_category": "Sneaker",
+          "target_group": "Erkek",
+          "product_type": "Sneaker",
+          "match_percent": 95
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Ayakkabı",
+        "sub_category": "Sneaker",
+        "product_type": null,
+        "target_group": "Erkek",
+        "features": [
+          "hafif",
+          "yazlık",
+          "nefes alabilir"
+        ],
+        "contexts": [],
+        "taxonomy_match": {
+          "field": "sub_category",
+          "value": "Sneaker",
+          "text": "sneaker günlük ayakkabı rahat hafif spor ayakkabı",
+          "score": 0.797
+        }
+      }
+    },
+    {
+      "id": "Q026",
+      "query": "koşu için erkek ayakkabı",
+      "expected": {
+        "main_category": "Ayakkabı",
+        "target_group": "Erkek",
+        "product_types_any": [
+          "Koşu Ayakkabısı",
+          "Maraton Ayakkabısı",
+          "Spor Ayakkabı"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Erkek Destekli Koşu Ayakkabısı",
+          "main_category": "Ayakkabı",
+          "sub_category": "Spor Ayakkabı",
+          "target_group": "Erkek",
+          "product_type": "Koşu Ayakkabısı",
+          "match_percent": 96
+        },
+        {
+          "name": "Erkek Koşu Ayakkabısı Destekli",
+          "main_category": "Ayakkabı",
+          "sub_category": "Spor Ayakkabı",
+          "target_group": "Erkek",
+          "product_type": "Koşu Ayakkabısı",
+          "match_percent": 96
+        },
+        {
+          "name": "Erkek Outdoor Sandalet",
+          "main_category": "Ayakkabı",
+          "sub_category": "Sandalet",
+          "target_group": "Erkek",
+          "product_type": "Sandalet",
+          "match_percent": 96
+        },
+        {
+          "name": "Erkek Spor Sneaker",
+          "main_category": "Ayakkabı",
+          "sub_category": "Sneaker",
+          "target_group": "Erkek",
+          "product_type": "Sneaker",
+          "match_percent": 95
+        },
+        {
+          "name": "Erkek Outdoor Sandalet Plus",
+          "main_category": "Ayakkabı",
+          "sub_category": "Sandalet",
+          "target_group": "Erkek",
+          "product_type": "Sandalet",
+          "match_percent": 95
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Spor",
+        "sub_category": "Koşu",
+        "product_type": null,
+        "target_group": "Erkek",
+        "features": [
+          "maraton",
+          "outdoor",
+          "koşu"
+        ],
+        "contexts": [],
+        "taxonomy_match": {
+          "field": "sub_category",
+          "value": "Sneaker",
+          "text": "sneaker günlük ayakkabı rahat hafif spor ayakkabı",
+          "score": 0.875
+        }
+      }
+    },
+    {
+      "id": "Q027",
+      "query": "kadın için spor tayt",
+      "expected": {
+        "main_category": "Spor",
+        "target_group": "Kadın",
+        "product_types_any": [
+          "Spor Tayt",
+          "Koşu Taytı"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Koşu Taytı Kadın",
+          "main_category": "Spor",
+          "sub_category": "Koşu",
+          "target_group": "Kadın",
+          "product_type": "Koşu Taytı",
+          "match_percent": 93
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Spor",
+        "sub_category": null,
+        "product_type": "Tayt",
+        "target_group": "Kadın",
+        "features": [
+          "rahat",
+          "spor"
+        ],
+        "contexts": [
+          "spor"
+        ],
+        "taxonomy_match": null
+      }
+    },
+    {
+      "id": "Q028",
+      "query": "kamp için katlanır sandalye",
+      "expected": {
+        "main_category": "Kamp",
+        "product_types_any": [
+          "Kamp Sandalyesi",
+          "Kamp Masası"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Kamp Sandalyesi",
+          "main_category": "Kamp",
+          "sub_category": "Mobilya",
+          "target_group": "Unisex",
+          "product_type": "Kamp Sandalyesi",
+          "match_percent": 96
+        },
+        {
+          "name": "Kamp Sandalyesi Katlanır",
+          "main_category": "Kamp",
+          "sub_category": "Mobilya",
+          "target_group": "Unisex",
+          "product_type": "Kamp Sandalyesi",
+          "match_percent": 96
+        },
+        {
+          "name": "Kamp Sandalyesi Bardaklıklı",
+          "main_category": "Kamp",
+          "sub_category": "Mobilya",
+          "target_group": "Unisex",
+          "product_type": "Kamp Sandalyesi",
+          "match_percent": 96
+        },
+        {
+          "name": "Katlanır Kamp Taburesi",
+          "main_category": "Kamp",
+          "sub_category": "Mobilya",
+          "target_group": "Unisex",
+          "product_type": "Kamp Taburesi",
+          "match_percent": 95
+        },
+        {
+          "name": "Katlanır Kamp Masası",
+          "main_category": "Kamp",
+          "sub_category": "Mobilya",
+          "target_group": "Unisex",
+          "product_type": "Kamp Masası",
+          "match_percent": 92
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Kamp",
+        "sub_category": "Mobilya",
+        "product_type": null,
+        "target_group": null,
+        "features": [],
+        "contexts": [
+          "kamp"
+        ],
+        "taxonomy_match": {
+          "field": "sub_category",
+          "value": "Mobilya",
+          "text": "kamp masası kamp sandalyesi katlanır masa sandalye oturma",
+          "score": 0.881
+        }
+      }
+    },
+    {
+      "id": "Q029",
+      "query": "ev için robot süpürge",
+      "expected": {
+        "main_category": "Ev & Yaşam",
+        "product_types_any": [
+          "Robot Süpürge",
+          "El Süpürgesi"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Robot Süpürge Akıllı",
+          "main_category": "Ev & Yaşam",
+          "sub_category": "Temizlik",
+          "target_group": "Unisex",
+          "product_type": "Robot Süpürge",
+          "match_percent": 96
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Ev & Yaşam",
+        "sub_category": "Temizlik",
+        "product_type": "Robot Süpürge",
+        "target_group": null,
+        "features": [],
+        "contexts": [],
+        "taxonomy_match": null
+      }
+    },
+    {
+      "id": "Q030",
+      "query": "kamp için termos",
+      "expected": {
+        "main_category": "Kamp",
+        "product_types_any": [
+          "Termos",
+          "Termos Bardak"
+        ]
+      },
+      "expects_clarification": false,
+      "expects_empty_result": false,
+      "needs_clarification": false,
+      "is_empty_result": false,
+      "top1_hit": true,
+      "top3_hit": true,
+      "products": [
+        {
+          "name": "Kamp Termos 1L",
+          "main_category": "Kamp",
+          "sub_category": "Pişirme",
+          "target_group": "Unisex",
+          "product_type": "Termos",
+          "match_percent": 96
+        },
+        {
+          "name": "Kamp Termosu 750 ml",
+          "main_category": "Kamp",
+          "sub_category": "Pişirme",
+          "target_group": "Unisex",
+          "product_type": "Termos",
+          "match_percent": 96
+        }
+      ],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Kamp",
+        "sub_category": "Pişirme",
+        "product_type": "Termos",
+        "target_group": null,
+        "features": [],
+        "contexts": [
+          "kamp"
+        ],
+        "taxonomy_match": null
+      }
+    },
+    {
+      "id": "Q031",
+      "query": "ayakkabı öner",
+      "expected": {},
+      "expects_clarification": true,
+      "expects_empty_result": false,
+      "needs_clarification": true,
+      "is_empty_result": false,
+      "top1_hit": false,
+      "top3_hit": false,
+      "products": [],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Ayakkabı",
+        "sub_category": null,
+        "product_type": null,
+        "target_group": null,
+        "features": [],
+        "contexts": [],
+        "taxonomy_match": {
+          "field": "sub_category",
+          "value": "Sneaker",
+          "text": "sneaker günlük ayakkabı rahat hafif spor ayakkabı",
+          "score": 0.838
+        }
+      }
+    },
+    {
+      "id": "Q032",
+      "query": "elbise öner",
+      "expected": {},
+      "expects_clarification": true,
+      "expects_empty_result": false,
+      "needs_clarification": true,
+      "is_empty_result": false,
+      "top1_hit": false,
+      "top3_hit": false,
+      "products": [],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Giyim",
+        "sub_category": "Elbise",
+        "product_type": null,
+        "target_group": null,
+        "features": [],
+        "contexts": [],
+        "taxonomy_match": {
+          "field": "sub_category",
+          "value": "Elbise",
+          "text": "elbise kıyafet kadın günlük yazlık uzun kısa elbise modeli",
+          "score": 0.653
+        }
+      }
+    },
+    {
+      "id": "Q033",
+      "query": "şampuan öner",
+      "expected": {},
+      "expects_clarification": true,
+      "expects_empty_result": false,
+      "needs_clarification": true,
+      "is_empty_result": false,
+      "top1_hit": false,
+      "top3_hit": false,
+      "products": [],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Kişisel Bakım",
+        "sub_category": "Saç Bakımı",
+        "product_type": "Şampuan",
+        "target_group": null,
+        "features": [],
+        "contexts": [],
+        "taxonomy_match": null
+      }
+    },
+    {
+      "id": "Q034",
+      "query": "elektronik öner",
+      "expected": {},
+      "expects_clarification": true,
+      "expects_empty_result": false,
+      "needs_clarification": true,
+      "is_empty_result": false,
+      "top1_hit": false,
+      "top3_hit": false,
+      "products": [],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Elektronik",
+        "sub_category": null,
+        "product_type": null,
+        "target_group": null,
+        "features": [],
+        "contexts": [],
+        "taxonomy_match": null
+      }
+    },
+    {
+      "id": "Q035",
+      "query": "spor ürünü öner",
+      "expected": {},
+      "expects_clarification": true,
+      "expects_empty_result": false,
+      "needs_clarification": true,
+      "is_empty_result": false,
+      "top1_hit": false,
+      "top3_hit": false,
+      "products": [],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": "Spor",
+        "sub_category": null,
+        "product_type": null,
+        "target_group": null,
+        "features": [
+          "rahat",
+          "spor"
+        ],
+        "contexts": [
+          "spor"
+        ],
+        "taxonomy_match": null
+      }
+    },
+    {
+      "id": "Q036",
+      "query": "1500 TL altında ürün",
+      "expected": {},
+      "expects_clarification": true,
+      "expects_empty_result": false,
+      "needs_clarification": true,
+      "is_empty_result": false,
+      "top1_hit": false,
+      "top3_hit": false,
+      "products": [],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": 1500,
+        "main_category": null,
+        "sub_category": null,
+        "product_type": null,
+        "target_group": null,
+        "features": [],
+        "contexts": [],
+        "taxonomy_match": null
+      }
+    },
+    {
+      "id": "Q037",
+      "query": "uzay gemisi motoru arıyorum",
+      "expected": {},
+      "expects_clarification": false,
+      "expects_empty_result": true,
+      "needs_clarification": false,
+      "is_empty_result": true,
+      "top1_hit": false,
+      "top3_hit": false,
+      "products": [],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": null,
+        "sub_category": null,
+        "product_type": null,
+        "target_group": null,
+        "features": [],
+        "contexts": [],
+        "taxonomy_match": null
+      }
+    },
+    {
+      "id": "Q038",
+      "query": "ışın kılıcı tavsiye et",
+      "expected": {},
+      "expects_clarification": false,
+      "expects_empty_result": true,
+      "needs_clarification": false,
+      "is_empty_result": true,
+      "top1_hit": false,
+      "top3_hit": false,
+      "products": [],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": null,
+        "sub_category": null,
+        "product_type": null,
+        "target_group": null,
+        "features": [],
+        "contexts": [],
+        "taxonomy_match": null
+      }
+    },
+    {
+      "id": "Q039",
+      "query": "dinozor maması lazım",
+      "expected": {},
+      "expects_clarification": false,
+      "expects_empty_result": true,
+      "needs_clarification": false,
+      "is_empty_result": true,
+      "top1_hit": false,
+      "top3_hit": false,
+      "products": [],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": null,
+        "sub_category": null,
+        "product_type": null,
+        "target_group": null,
+        "features": [],
+        "contexts": [],
+        "taxonomy_match": null
+      }
+    },
+    {
+      "id": "Q040",
+      "query": "telepati güçlendirici cihaz istiyorum",
+      "expected": {},
+      "expects_clarification": false,
+      "expects_empty_result": true,
+      "needs_clarification": false,
+      "is_empty_result": true,
+      "top1_hit": false,
+      "top3_hit": false,
+      "products": [],
+      "parsed_query": {
+        "min_price": null,
+        "max_price": null,
+        "main_category": null,
+        "sub_category": null,
+        "product_type": null,
+        "target_group": null,
+        "features": [],
+        "contexts": [],
+        "taxonomy_match": null
+      }
+    }
+  ]
+}

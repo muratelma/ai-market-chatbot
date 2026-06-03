@@ -28,12 +28,13 @@ FEATURE_SYNONYMS = {
     "rahat": ["rahat"],
     "yürüyüş": ["yürüyüş", "outdoor", "rahat"],
     "uyku": ["uyku", "tulum", "mat", "sıcak"],
-    "yemek": ["pişirme", "ocak"],
-    "pişirme": ["pişirme", "ocak"],
-    "pisirme": ["pişirme", "ocak"],
-    "pişir": ["pişirme", "ocak"],
-    "pisir": ["pişirme", "ocak"],
-    "ocak": ["pişirme", "ocak"],
+    # Cooking: tighten to distinguish "yemek yapmak" (cooking) from dishes/plates
+    "yemek": ["pişirme", "yemek yapma"],
+    "pişirme": ["pişirme"],
+    "pisirme": ["pişirme"],
+    "pişir": ["pişirme"],
+    "pisir": ["pişirme"],
+    "ocak": ["pişirme", "ocak", "kamp ocağı"],
     "yaz": ["yazlık", "hafif", "nefes alabilir"],
     "yazlık": ["yazlık", "hafif", "nefes alabilir"],
     "yazlik": ["yazlık", "hafif", "nefes alabilir"],
@@ -42,6 +43,23 @@ FEATURE_SYNONYMS = {
     "kepek": ["kepek", "kepek karşıtı"],
     "kuru saç": ["kuru saç", "nemlendirici", "onarıcı"],
     "yağlı saç": ["yağlı saç", "yağ dengeleyici"],
+    # Skin care
+    "yağlı cilt": ["yağlı cilt", "yağ dengeleyici", "mat"],
+    "kuru cilt": ["kuru cilt", "nemlendirici", "onarıcı"],
+    "hassas cilt": ["hassas cilt", "parfümsüz"],
+    "sivilce": ["sivilce", "akne", "arındırıcı", "yağ dengeleyici"],
+    "morluk": ["morluk", "aydınlatıcı", "göz altı"],
+    "pişik": ["pişik", "kızarıklık", "koruyucu"],
+    # Sports / fitness
+    "egzersiz": ["egzersiz", "spor", "antrenman"],
+    "fitness": ["fitness", "egzersiz", "antrenman"],
+    "koşu": ["koşu", "maraton", "outdoor"],
+    # Automotive
+    "araç": ["araç", "araba", "otomotiv"],
+    "araba": ["araç", "araba"],
+    # Home
+    "dekoratif": ["dekoratif", "dekorasyon", "süsleme"],
+    "lamba": ["lamba", "aydınlatma", "ışık"],
 }
 
 
@@ -82,7 +100,8 @@ QUERY_ALIASES = [
         },
     },
     {
-        "keywords": ["araç şarj", "arac şarj", "araba şarj", "araç için telefon şarj"],
+        "keywords": ["araç şarj", "arac şarj", "araba şarj", "araç için telefon şarj",
+                     "arabada şarj", "arabada telefon şarj"],
         "fields": {
             "main_category": "Otomotiv",
             "sub_category": "Elektronik",
@@ -95,6 +114,101 @@ QUERY_ALIASES = [
             "main_category": "Ev & Yaşam",
             "sub_category": "Aydınlatma",
             "features": ["dekoratif", "lamba", "ışık"],
+        },
+    },
+    # Cooking in camp context
+    {
+        "keywords": ["kamp için yemek yapacak", "kamp yemek yapacak", "kamp için pişirme",
+                     "kamp ocağı", "kamp yemeği için ocak", "kamp yemeği ocak"],
+        "fields": {
+            "main_category": "Kamp",
+            "sub_category": "Pişirme",
+            "product_type": "Kamp Ocağı",
+        },
+    },
+    {
+        "keywords": ["kahve makinesi", "türk kahvesi makinesi", "espresso makinesi"],
+        "fields": {
+            "main_category": "Mutfak",
+            "sub_category": "Küçük Ev Aleti",
+            "product_type": "Kahve Makinesi",
+        },
+    },
+    {
+        "keywords": ["robot süpürge", "akıllı süpürge"],
+        "fields": {
+            "main_category": "Ev & Yaşam",
+        },
+    },
+    # Dry shampoo: "su gerektirmeyen" / "susuz" should map to Kuru Şampuan
+    {
+        "keywords": ["su gerektirmeyen şampuan", "susuz şampuan", "kuru şampuan"],
+        "fields": {
+            "main_category": "Kişisel Bakım",
+            "sub_category": "Saç Bakımı",
+            "product_type": "Kuru Şampuan",
+        },
+    },
+    # Action-to-product: listening to music -> headphones
+    {
+        "keywords": ["müzik dinlemek için", "müzik dinlemek", "şarkı dinlemek"],
+        "fields": {
+            "main_category": "Elektronik",
+            "product_type": "Kulaklık",
+        },
+    },
+    # Tent lighting
+    {
+        "keywords": ["çadır içi aydınlatma", "çadır aydınlatma", "çadır lambası"],
+        "fields": {
+            "main_category": "Kamp",
+            "sub_category": "Aydınlatma",
+            "product_type": "Kamp Lambası",
+        },
+    },
+    # Water bottle / canteen
+    {
+        "keywords": ["su matarası", "matara", "su şişesi"],
+        "fields": {
+            "product_type": "Matara",
+        },
+    },
+    # Computer monitor
+    {
+        "keywords": ["bilgisayar monitörü", "monitör", "bilgisayar ekranı"],
+        "fields": {
+            "main_category": "Elektronik",
+            "sub_category": "Bilgisayar",
+            "product_type": "Monitör",
+        },
+    },
+    # Outdoor pants
+    {
+        "keywords": ["doğa yürüyüşü için pantolon", "outdoor pantolon", "trekking pantolon",
+                     "yürüyüş pantolonu"],
+        "fields": {
+            "main_category": "Giyim",
+            "sub_category": "Pantolon",
+            "product_type": "Kargo Pantolon",
+        },
+    },
+    # Sports towel
+    {
+        "keywords": ["spor havlusu", "spor salonu havlu", "spor salonu için havlu",
+                     "ter havlusu"],
+        "fields": {
+            "main_category": "Spor",
+            "sub_category": "Aksesuar",
+            "product_type": "Spor Havlusu",
+        },
+    },
+    # Keyboard Mouse Set
+    {
+        "keywords": ["klavye mouse takım", "klavye fare set"],
+        "fields": {
+            "main_category": "Elektronik",
+            "sub_category": "Bilgisayar",
+            "product_type": "Klavye Mouse Set",
         },
     },
 ]
@@ -182,6 +296,17 @@ def extract_price_range(query):
             max_price = int(match.group(1))
             return min_price, max_price
 
+    # "civarı" / "civarında" / "dolaylarında" -> apply ±30% tolerance
+    approx_match = re.search(
+        r"(\d+)\s*(?:tl|lira)?\s*(?:civarı|civarında|civarinda|dolaylarında|dolaylarinda|dolayı|dolayi)",
+        q
+    )
+    if approx_match:
+        center = int(approx_match.group(1))
+        min_price = int(center * 0.7)
+        max_price = int(center * 1.3)
+        return min_price, max_price
+
     single_match = re.search(r"(\d+)\s*(?:tl|lira)", q)
     if single_match:
         max_price = int(single_match.group(1))
@@ -250,7 +375,21 @@ def clean_query_for_taxonomy(query):
 
 
 def extract_explicit_main_category(query, df):
+    # Category names that are also common context words and need special handling
     ambiguous_categories = ["kamp", "spor"]
+
+    # Phrase aliases for compound or abbreviated category names that won't match
+    # their full name as it appears in the database (e.g. "Ev & Yaşam" → "ev")
+    category_phrase_aliases = {
+        "Ev & Yaşam": ["ev & yaşam", "ev & yasam"],
+        "Anne & Bebek": ["anne & bebek"],
+        "Kişisel Bakım": ["kişisel bakım", "kisisel bakim"],
+        "Otomotiv": ["otomotiv", "araç", "arac", "araba"],
+        "Mutfak": ["mutfak"],
+        "Kırtasiye": ["kırtasiye", "kirtasiye"],
+        "Aksesuar": ["aksesuar"],
+    }
+
     values = df["main_category"].dropna().unique().tolist()
 
     for value in values:
@@ -259,13 +398,23 @@ def extract_explicit_main_category(query, df):
         if value_lower in ambiguous_categories:
             continue
 
+        # Check phrase aliases first (most specific match wins)
+        if value in category_phrase_aliases:
+            for alias in category_phrase_aliases[value]:
+                if contains_phrase(query, alias):
+                    return value
+            continue  # Already checked via aliases; skip generic match below
+
+        # Generic match: category name appears literally in the query
         if contains_phrase(query, value_lower):
             return value
 
+        # ASCII Turkish fallback for Ayakkabı
         if value_lower == "ayakkabı" and contains_phrase(query, "ayakkabi"):
             return value
 
     return None
+
 
 
 def remaining_query_after_category(query, main_category):
@@ -365,6 +514,14 @@ def parse_query(query, df, model, taxonomy_embeddings, taxonomy_records, taxonom
     
     explicit_sub_category = find_value_from_column(query, df, "sub_category")
     explicit_product_type = find_value_from_column(query, df, "product_type")
+
+    if " için " in query.lower():
+        parts = query.lower().split(" için ", 1)
+        if len(parts) == 2:
+            y_part = parts[1].strip()
+            y_type = find_value_from_column(y_part, df, "product_type")
+            if y_type:
+                explicit_product_type = y_type
 
     # Yazlık / kışlık gibi ifadeler bazı ürünlerde product_type olabilir,
     # ama ayakkabı gibi kategorilerde mevsim/özellik olarak kalmalıdır.
@@ -530,16 +687,19 @@ def is_query_too_general(query, parsed_query, df):
     if has_main_category and not has_sub_category and not has_product_type:
         return True
 
-    # Alt kategori varsa ama altında birden fazla ürün varsa soru sor.
-    # Örnek: elbise -> yazlık mı, abiye mi?
+    # Sub-category is a fairly specific signal. On a 750-product catalog
+    # having 2-5 products per sub-category is normal; only ask for
+    # clarification when there are enough variants to make choice meaningful.
     if has_sub_category and not has_product_type:
-        return matching_product_count > 1
+        return matching_product_count > 5
 
-    # Ürün tipi varsa genelde yeterince nettir.
-    # Örnek: powerbank, mouse, klavye, akıllı saat
-    # Ama aynı ürün tipinden çok fazla seçenek varsa soru sorabilir.
+    # Product type is already a strong, specific signal. Only ask for
+    # clarification when there are many variants of the same type and
+    # no other discriminating context (price, features, target group) is given.
+    # Threshold tuned for a 750-product catalog where 5-10 items per type is normal.
     if has_product_type:
-        return matching_product_count > 3
+        return matching_product_count > 20
+
 
     return False
 
@@ -593,22 +753,30 @@ def infer_main_category_from_query_context(query):
         "fitness": "Spor",
         "kosu": "Spor",
         "koşu": "Spor",
-
+        # Home & Living
         "ev": "Ev & Yaşam",
         "dekoratif": "Ev & Yaşam",
         "dekorasyon": "Ev & Yaşam",
-
+        # Kitchen
         "mutfak": "Mutfak",
         "kahve": "Mutfak",
-
+        "blender": "Mutfak",
+        "mikser": "Mutfak",
+        # Baby & Mother
         "bebek": "Anne & Bebek",
         "pişik": "Anne & Bebek",
         "pisik": "Anne & Bebek",
-
+        "hamile": "Anne & Bebek",
+        "emzik": "Anne & Bebek",
+        # Automotive
         "araç": "Otomotiv",
         "arac": "Otomotiv",
         "otomobil": "Otomotiv",
         "araba": "Otomotiv",
+        # Stationery
+        "kırtasiye": "Kırtasiye",
+        "kalem": "Kırtasiye",
+        "defter": "Kırtasiye",
     }
 
     matched_categories = set()
@@ -666,7 +834,8 @@ def normalize_category_consistency(parsed_query, df, query):
             # [Precedence Check] If there is a strong query context main category that differs from
             # the product type's default main category, allow the context category to take precedence
             # ONLY if we can find a matching relaxed product type in that category.
-            if context_main_category is not None and context_main_category != correct_main_category:
+            # Do NOT relax if the user explicitly typed the exact product type in their query.
+            if context_main_category is not None and context_main_category != correct_main_category and not contains_phrase(query, product_type_lower):
                 words = [w for w in product_type_lower.split() if len(w) > 2]
                 relaxed_type = None
                 for word in reversed(words):
@@ -711,9 +880,18 @@ def normalize_category_consistency(parsed_query, df, query):
             (df["sub_category"].astype(str).str.lower() == str(parsed_query["sub_category"]).lower())
         ]
 
-        # Eğer bu ikili dataset'te yoksa sub_category'yi temizle.
+        # Eğer bu ikili dataset'te yoksa, sub_category'nin gerçek main_category'sini bulmaya çalış
         if check_rows.empty:
-            parsed_query["sub_category"] = None
+            sub_category_lower = str(parsed_query["sub_category"]).lower()
+            matched_rows = df[df["sub_category"].astype(str).str.lower() == sub_category_lower]
+            if not matched_rows.empty:
+                unique_main_categories = matched_rows["main_category"].dropna().unique().tolist()
+                if len(unique_main_categories) == 1:
+                    parsed_query["main_category"] = unique_main_categories[0]
+                else:
+                    parsed_query["sub_category"] = None
+            else:
+                parsed_query["sub_category"] = None
 
     # Hâlâ main_category boş ama sub_category varsa, sadece tek ana kategoriye bağlıysa doldur.
     if (

@@ -1,0 +1,897 @@
+[
+  {
+    "id": "QS_A01",
+    "query": "çelik termos",
+    "expected": {
+      "main_category": "Kamp",
+      "product_types_any": [
+        "Termos"
+      ]
+    }
+  },
+  {
+    "id": "QS_A02",
+    "query": "ikiz bebek arabası",
+    "expected": {
+      "main_category": "Anne & Bebek",
+      "product_types_any": [
+        "Bebek Arabası"
+      ]
+    }
+  },
+  {
+    "id": "QS_A03",
+    "query": "şarjlı diş fırçası",
+    "expected": {
+      "main_category": "Kişisel Bakım",
+      "product_types_any": [
+        "Diş Fırçası"
+      ]
+    }
+  },
+  {
+    "id": "QS_A04",
+    "query": "araba lastik pompası",
+    "expected": {
+      "main_category": "Otomotiv",
+      "product_types_any": [
+        "Lastik Pompası"
+      ]
+    }
+  },
+  {
+    "id": "QS_A05",
+    "query": "fosforlu kalem",
+    "expected": {
+      "main_category": "Kırtasiye",
+      "product_types_any": [
+        "Fosforlu Kalem"
+      ]
+    }
+  },
+  {
+    "id": "QS_A06",
+    "query": "spor çantası",
+    "expected": {
+      "product_types_any": [
+        "Spor Çantası",
+        "Sırt Çantası"
+      ]
+    }
+  },
+  {
+    "id": "QS_A07",
+    "query": "yoga matı",
+    "expected": {
+      "main_category": "Spor",
+      "product_types_any": [
+        "Yoga Matı"
+      ]
+    }
+  },
+  {
+    "id": "QS_A08",
+    "query": "el blender",
+    "expected": {
+      "main_category": "Mutfak",
+      "product_types_any": [
+        "Blender",
+        "Mini Blender"
+      ]
+    }
+  },
+  {
+    "id": "QS_A09",
+    "query": "filtre kahve makinesi",
+    "expected": {
+      "main_category": "Mutfak",
+      "product_types_any": [
+        "Kahve Makinesi"
+      ]
+    }
+  },
+  {
+    "id": "QS_A10",
+    "query": "ışıklı oyuncu mouse",
+    "expected": {
+      "main_category": "Elektronik",
+      "product_types_any": [
+        "Oyuncu Mouse"
+      ]
+    }
+  },
+  {
+    "id": "QS_B01",
+    "query": "ucuz kulaklık",
+    "expected": {
+      "main_category": "Elektronik",
+      "product_types_any": [
+        "Kulaklık",
+        "Kulak İçi Kulaklık"
+      ]
+    }
+  },
+  {
+    "id": "QS_B02",
+    "query": "1000 tl altı saat",
+    "expected": {
+      "main_category": "Aksesuar",
+      "product_types_any": [
+        "Kol Saati"
+      ]
+    }
+  },
+  {
+    "id": "QS_B03",
+    "query": "pahalı parfüm",
+    "expected": {
+      "main_category": "Kişisel Bakım",
+      "product_types_any": [
+        "Parfüm"
+      ]
+    }
+  },
+  {
+    "id": "QS_B04",
+    "query": "uygun fiyatlı klavye",
+    "expected": {
+      "main_category": "Elektronik",
+      "product_types_any": [
+        "Klavye",
+        "Klavye Mouse Set"
+      ]
+    }
+  },
+  {
+    "id": "QS_B05",
+    "query": "500 tl civarı sırt çantası",
+    "expected": {
+      "main_category": "Aksesuar",
+      "product_types_any": [
+        "Sırt Çantası"
+      ]
+    }
+  },
+  {
+    "id": "QS_B06",
+    "query": "indirimli kamp çadırı",
+    "expected": {
+      "main_category": "Kamp",
+      "product_types_any": [
+        "Kamp Çadırı"
+      ]
+    }
+  },
+  {
+    "id": "QS_B07",
+    "query": "en ucuz güneş gözlüğü",
+    "expected": {
+      "main_category": "Aksesuar",
+      "product_types_any": [
+        "Güneş Gözlüğü"
+      ]
+    }
+  },
+  {
+    "id": "QS_B08",
+    "query": "lüks kol saati",
+    "expected": {
+      "main_category": "Aksesuar",
+      "product_types_any": [
+        "Kol Saati"
+      ]
+    }
+  },
+  {
+    "id": "QS_B09",
+    "query": "2000 tl üstü robot süpürge",
+    "expected": {
+      "main_category": "Ev & Yaşam",
+      "product_types_any": [
+        "Robot Süpürge"
+      ]
+    }
+  },
+  {
+    "id": "QS_B10",
+    "query": "fiyat performans oyuncu kulaklığı",
+    "expected": {
+      "main_category": "Elektronik",
+      "product_types_any": [
+        "Oyuncu Kulaklığı"
+      ]
+    }
+  },
+  {
+    "id": "QS_C01",
+    "query": "erkek koşu ayakkabısı",
+    "expected": {
+      "target_group": "Erkek",
+      "product_types_any": [
+        "Koşu Ayakkabısı",
+        "Spor Ayakkabı"
+      ]
+    }
+  },
+  {
+    "id": "QS_C02",
+    "query": "kadın yazlık elbise",
+    "expected": {
+      "target_group": "Kadın",
+      "product_types_any": [
+        "Yazlık Elbise",
+        "Mini Elbise",
+        "Maxi Elbise",
+        "Midi Elbise"
+      ]
+    }
+  },
+  {
+    "id": "QS_C03",
+    "query": "erkek kışlık mont",
+    "expected": {
+      "target_group": "Erkek",
+      "product_types_any": [
+        "Mont",
+        "Şişme Mont",
+        "Kaban",
+        "Polar Mont"
+      ]
+    }
+  },
+  {
+    "id": "QS_C04",
+    "query": "kadın spor tayt",
+    "expected": {
+      "target_group": "Kadın",
+      "product_types_any": [
+        "Spor Tayt",
+        "Koşu Taytı"
+      ]
+    }
+  },
+  {
+    "id": "QS_C05",
+    "query": "kız çocuk ayakkabı",
+    "expected": {
+      "target_group": "Çocuk",
+      "product_types_any": [
+        "Okul Ayakkabısı",
+        "Çocuk Spor Ayakkabı",
+        "Çocuk Sneaker",
+        "Çocuk Sandalet",
+        "Çocuk Bot"
+      ]
+    }
+  },
+  {
+    "id": "QS_C06",
+    "query": "erkek deri cüzdan",
+    "expected": {
+      "target_group": "Erkek",
+      "product_types_any": [
+        "Cüzdan",
+        "Kartlık",
+        "Mini Cüzdan"
+      ]
+    }
+  },
+  {
+    "id": "QS_C07",
+    "query": "kadın güneş gözlüğü",
+    "expected": {
+      "target_group": "Kadın",
+      "product_types_any": [
+        "Güneş Gözlüğü"
+      ]
+    }
+  },
+  {
+    "id": "QS_C08",
+    "query": "erkek bakım seti",
+    "expected": {
+      "target_group": "Erkek"
+    }
+  },
+  {
+    "id": "QS_C09",
+    "query": "unisex eşofman takımı",
+    "expected": {
+      "target_group": "Unisex",
+      "product_types_any": [
+        "Eşofman Takım",
+        "Eşofman Altı"
+      ]
+    }
+  },
+  {
+    "id": "QS_C10",
+    "query": "kadın topuklu ayakkabı",
+    "expected": {
+      "target_group": "Kadın",
+      "product_types_any": [
+        "Topuklu Ayakkabı"
+      ]
+    }
+  },
+  {
+    "id": "QS_D01",
+    "query": "okul için sırt çantası",
+    "expected": {
+      "product_types_any": [
+        "Sırt Çantası"
+      ]
+    }
+  },
+  {
+    "id": "QS_D02",
+    "query": "yağmurlu hava için bot",
+    "expected": {
+      "product_types_any": [
+        "Bot",
+        "Yağmur Botu",
+        "Kar Botu"
+      ]
+    }
+  },
+  {
+    "id": "QS_D03",
+    "query": "spor salonu için havlu",
+    "expected": {
+      "product_types_any": [
+        "Spor Havlusu",
+        "Havlu Seti"
+      ]
+    }
+  },
+  {
+    "id": "QS_D04",
+    "query": "uzun yolculuk için boyun yastığı",
+    "expected": {
+      "product_types_any": [
+        "Boyun Yastığı"
+      ]
+    }
+  },
+  {
+    "id": "QS_D05",
+    "query": "kamp yemeği için ocak",
+    "expected": {
+      "product_types_any": [
+        "Kamp Ocağı"
+      ]
+    }
+  },
+  {
+    "id": "QS_D06",
+    "query": "kış kampı için uyku tulumu",
+    "expected": {
+      "product_types_any": [
+        "Uyku Tulumu"
+      ]
+    }
+  },
+  {
+    "id": "QS_D07",
+    "query": "evden çalışmak için monitör",
+    "expected": {
+      "product_types_any": [
+        "Monitör"
+      ]
+    }
+  },
+  {
+    "id": "QS_D08",
+    "query": "koşu yaparken müzik dinlemek için",
+    "expected": {
+      "product_types_any": [
+        "Kulak İçi Kulaklık",
+        "Kulaklık"
+      ]
+    }
+  },
+  {
+    "id": "QS_D09",
+    "query": "doğa yürüyüşü için pantolon",
+    "expected": {
+      "product_types_any": [
+        "Kargo Pantolon",
+        "Outdoor Pantolon",
+        "Pantolon"
+      ]
+    }
+  },
+  {
+    "id": "QS_D10",
+    "query": "arabada telefon şarj etmek için",
+    "expected": {
+      "product_types_any": [
+        "Araç Şarj Cihazı"
+      ]
+    }
+  },
+  {
+    "id": "QS_E01",
+    "query": "kuru saçlar için şampuan",
+    "expected": {
+      "product_types_any": [
+        "Şampuan",
+        "Saç Maskesi"
+      ]
+    }
+  },
+  {
+    "id": "QS_E02",
+    "query": "kepeğe karşı etkili şampuan",
+    "expected": {
+      "product_types_any": [
+        "Şampuan",
+        "Saç Toniği"
+      ]
+    }
+  },
+  {
+    "id": "QS_E03",
+    "query": "sivilceli cilt için temizleyici",
+    "expected": {
+      "product_types_any": [
+        "Temizleyici",
+        "Tonik",
+        "Peeling"
+      ]
+    }
+  },
+  {
+    "id": "QS_E04",
+    "query": "kırışıklık karşıtı gece kremi",
+    "expected": {
+      "product_types_any": [
+        "Gece Kremi",
+        "Cilt Serumu"
+      ]
+    }
+  },
+  {
+    "id": "QS_E05",
+    "query": "güneş lekeleri için güneş kremi",
+    "expected": {
+      "product_types_any": [
+        "Güneş Kremi"
+      ]
+    }
+  },
+  {
+    "id": "QS_E06",
+    "query": "hassas ciltler için tıraş köpüğü",
+    "expected": {
+      "product_types_any": [
+        "Tıraş Balmı",
+        "Tıraş Balsamı"
+      ]
+    }
+  },
+  {
+    "id": "QS_E07",
+    "query": "yıpranmış saçlar için saç maskesi",
+    "expected": {
+      "product_types_any": [
+        "Saç Maskesi"
+      ]
+    }
+  },
+  {
+    "id": "QS_E08",
+    "query": "göz altı morlukları için krem",
+    "expected": {
+      "product_types_any": [
+        "Göz Kremi"
+      ]
+    }
+  },
+  {
+    "id": "QS_E09",
+    "query": "bebeklerde pişik için",
+    "expected": {
+      "product_types_any": [
+        "Pişik Kremi",
+        "Bebek Nemlendirici Krem"
+      ]
+    }
+  },
+  {
+    "id": "QS_E10",
+    "query": "yağlı ciltler için nemlendirici",
+    "expected": {
+      "product_types_any": [
+        "Nemlendirici",
+        "Cilt Serumu"
+      ]
+    }
+  },
+  {
+    "id": "QS_F01",
+    "query": "laptop için kablosuz mouse",
+    "expected": {
+      "product_types_any": [
+        "Mouse",
+        "Oyuncu Mouse"
+      ]
+    }
+  },
+  {
+    "id": "QS_F02",
+    "query": "akıllı telefon için kılıf",
+    "expected": {
+      "product_types_any": [
+        "Telefon Kılıfı"
+      ]
+    }
+  },
+  {
+    "id": "QS_F03",
+    "query": "tablet için dokunmatik kalem",
+    "expected": {
+      "product_types_any": [
+        "Tablet Kalemi",
+        "Stylus Kalem"
+      ]
+    }
+  },
+  {
+    "id": "QS_F04",
+    "query": "bilgisayar monitörü",
+    "expected": {
+      "product_types_any": [
+        "Monitör"
+      ]
+    }
+  },
+  {
+    "id": "QS_F05",
+    "query": "telefon tutucu araç içi",
+    "expected": {
+      "product_types_any": [
+        "Araç Telefon Tutucu",
+        "Telefon Tutucu"
+      ]
+    }
+  },
+  {
+    "id": "QS_F06",
+    "query": "oyuncu kulaklığı ışıklı",
+    "expected": {
+      "product_types_any": [
+        "Oyuncu Kulaklığı"
+      ]
+    }
+  },
+  {
+    "id": "QS_F07",
+    "query": "taşınabilir şarj powerbank",
+    "expected": {
+      "product_types_any": [
+        "Powerbank"
+      ]
+    }
+  },
+  {
+    "id": "QS_F08",
+    "query": "televizyon için akıllı kumanda",
+    "expected": {
+      "product_types_any": [
+        "TV Kumandası"
+      ]
+    }
+  },
+  {
+    "id": "QS_F09",
+    "query": "hızlı şarj adaptörü",
+    "expected": {
+      "product_types_any": [
+        "Şarj Adaptörü"
+      ]
+    }
+  },
+  {
+    "id": "QS_F10",
+    "query": "bluetooth hoparlör",
+    "expected": {
+      "product_types_any": [
+        "Bluetooth Hoparlör",
+        "Ev Hoparlörü"
+      ]
+    }
+  },
+  {
+    "id": "QS_G01",
+    "query": "çadır içi aydınlatma lambası",
+    "expected": {
+      "product_types_any": [
+        "Kamp Lambası",
+        "El Feneri",
+        "Gaz Fener"
+      ]
+    }
+  },
+  {
+    "id": "QS_G02",
+    "query": "soğuk hava için uyku tulumu",
+    "expected": {
+      "product_types_any": [
+        "Uyku Tulumu"
+      ]
+    }
+  },
+  {
+    "id": "QS_G03",
+    "query": "kamp yemeği için ocak",
+    "expected": {
+      "product_types_any": [
+        "Kamp Ocağı"
+      ]
+    }
+  },
+  {
+    "id": "QS_G04",
+    "query": "kamp matı şişme",
+    "expected": {
+      "product_types_any": [
+        "Kamp Matı",
+        "Şişme Kamp Matı"
+      ]
+    }
+  },
+  {
+    "id": "QS_G05",
+    "query": "doğa yürüyüşü için baton",
+    "expected": {
+      "product_types_any": [
+        "Trekking Baton"
+      ]
+    }
+  },
+  {
+    "id": "QS_G06",
+    "query": "kamp için çelik termos",
+    "expected": {
+      "product_types_any": [
+        "Termos"
+      ]
+    }
+  },
+  {
+    "id": "QS_G07",
+    "query": "kamp için su matarası",
+    "expected": {
+      "product_types_any": [
+        "Matara",
+        "Sporcu Matarası"
+      ]
+    }
+  },
+  {
+    "id": "QS_G08",
+    "query": "katlanır kamp sandalyesi",
+    "expected": {
+      "product_types_any": [
+        "Kamp Sandalyesi"
+      ]
+    }
+  },
+  {
+    "id": "QS_G09",
+    "query": "kamp bıçağı çakı",
+    "expected": {
+      "product_types_any": [
+        "Kamp Bıçağı",
+        "Kamp Çakısı"
+      ]
+    }
+  },
+  {
+    "id": "QS_G10",
+    "query": "iki kişilik kamp çadırı",
+    "expected": {
+      "product_types_any": [
+        "Kamp Çadırı"
+      ]
+    }
+  },
+  {
+    "id": "QS_H01",
+    "query": "ayakkabı",
+    "expects_clarification": true
+  },
+  {
+    "id": "QS_H02",
+    "query": "çanta",
+    "expects_clarification": true
+  },
+  {
+    "id": "QS_H03",
+    "query": "kıyafet",
+    "expects_clarification": true
+  },
+  {
+    "id": "QS_H04",
+    "query": "hediye",
+    "expects_clarification": true
+  },
+  {
+    "id": "QS_H05",
+    "query": "ucuz bir şeyler",
+    "expects_clarification": true
+  },
+  {
+    "id": "QS_H06",
+    "query": "yeni ürünler",
+    "expects_clarification": true
+  },
+  {
+    "id": "QS_H07",
+    "query": "kamp eşyası",
+    "expects_clarification": true
+  },
+  {
+    "id": "QS_H08",
+    "query": "spor malzemesi",
+    "expects_clarification": true
+  },
+  {
+    "id": "QS_H09",
+    "query": "mutfak",
+    "expects_clarification": true
+  },
+  {
+    "id": "QS_H10",
+    "query": "kışlık",
+    "expects_clarification": true
+  },
+  {
+    "id": "QS_I01",
+    "query": "uçan kaykay",
+    "expects_empty_result": true
+  },
+  {
+    "id": "QS_I02",
+    "query": "zihin okuma cihazı",
+    "expects_empty_result": true
+  },
+  {
+    "id": "QS_I03",
+    "query": "ışınlanma makinesi",
+    "expects_empty_result": true
+  },
+  {
+    "id": "QS_I04",
+    "query": "bebek için viski",
+    "expects_empty_result": true
+  },
+  {
+    "id": "QS_I05",
+    "query": "köpekbalığı akvaryumu",
+    "expects_empty_result": true
+  },
+  {
+    "id": "QS_I06",
+    "query": "dinozor yumurtası",
+    "expects_empty_result": true
+  },
+  {
+    "id": "QS_I07",
+    "query": "uzay gemisi yakıtı",
+    "expects_empty_result": true
+  },
+  {
+    "id": "QS_I08",
+    "query": "görünmezlik pelerini",
+    "expects_empty_result": true
+  },
+  {
+    "id": "QS_I09",
+    "query": "ölümsüzlük iksiri",
+    "expects_empty_result": true
+  },
+  {
+    "id": "QS_I10",
+    "query": "kedi için kanat",
+    "expects_empty_result": true
+  },
+  {
+    "id": "QS_J01",
+    "query": "su gerektirmeyen şampuan",
+    "expected": {
+      "product_types_any": [
+        "Kuru Şampuan"
+      ]
+    }
+  },
+  {
+    "id": "QS_J02",
+    "query": "yağlı saç için şampuan",
+    "expected": {
+      "product_types_any": [
+        "Şampuan"
+      ]
+    }
+  },
+  {
+    "id": "QS_J03",
+    "query": "kamp yemek pişirme seti",
+    "expected": {
+      "product_types_any": [
+        "Kamp Mutfak Seti",
+        "Tencere Seti",
+        "Kamp Tabak Seti"
+      ]
+    }
+  },
+  {
+    "id": "QS_J04",
+    "query": "kamp yemek ocağı",
+    "expected": {
+      "product_types_any": [
+        "Kamp Ocağı"
+      ]
+    }
+  },
+  {
+    "id": "QS_J05",
+    "query": "arabada şarj",
+    "expected": {
+      "product_types_any": [
+        "Araç Şarj Cihazı"
+      ]
+    }
+  },
+  {
+    "id": "QS_J06",
+    "query": "taşınabilir şarj cihazı",
+    "expected": {
+      "product_types_any": [
+        "Powerbank"
+      ]
+    }
+  },
+  {
+    "id": "QS_J07",
+    "query": "sadece bilgisayar faresi",
+    "expected": {
+      "product_types_any": [
+        "Mouse",
+        "Oyuncu Mouse"
+      ]
+    }
+  },
+  {
+    "id": "QS_J08",
+    "query": "klavye mouse takım",
+    "expected": {
+      "product_types_any": [
+        "Klavye Mouse Set"
+      ]
+    }
+  },
+  {
+    "id": "QS_J09",
+    "query": "kalın kışlık kaban",
+    "expected": {
+      "product_types_any": [
+        "Kaban",
+        "Şişme Mont",
+        "Bot"
+      ]
+    }
+  },
+  {
+    "id": "QS_J10",
+    "query": "hafif yağmurluk",
+    "expected": {
+      "product_types_any": [
+        "Yağmurluk",
+        "Yağmurluk Mont",
+        "Çanta Yağmurluğu"
+      ]
+    }
+  }
+]

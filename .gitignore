@@ -27,4 +27,7 @@ Thumbs.db
 
 # Large / raw datasets
 backend/raw_products.csv
-backend/products_prepared.csv
+backend/products_prepared.csvscratch/
+.cursor/
+backend/scratch/
+backend/report.json
