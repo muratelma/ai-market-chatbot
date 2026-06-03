@@ -47,6 +47,9 @@ FEATURE_SYNONYMS = {
     "yağlı cilt": ["yağlı cilt", "yağ dengeleyici", "mat"],
     "kuru cilt": ["kuru cilt", "nemlendirici", "onarıcı"],
     "hassas cilt": ["hassas cilt", "parfümsüz"],
+    "sivilce": ["sivilce", "akne", "arındırıcı", "yağ dengeleyici"],
+    "morluk": ["morluk", "aydınlatıcı", "göz altı"],
+    "pişik": ["pişik", "kızarıklık", "koruyucu"],
     # Sports / fitness
     "egzersiz": ["egzersiz", "spor", "antrenman"],
     "fitness": ["fitness", "egzersiz", "antrenman"],
@@ -428,6 +431,14 @@ def parse_query(query, df, model, taxonomy_embeddings, taxonomy_records, taxonom
     explicit_sub_category = find_value_from_column(query, df, "sub_category")
     explicit_product_type = find_value_from_column(query, df, "product_type")
 
+    if " için " in query.lower():
+        parts = query.lower().split(" için ", 1)
+        if len(parts) == 2:
+            y_part = parts[1].strip()
+            y_type = find_value_from_column(y_part, df, "product_type")
+            if y_type:
+                explicit_product_type = y_type
+
     # Yazlık / kışlık gibi ifadeler bazı ürünlerde product_type olabilir,
     # ama ayakkabı gibi kategorilerde mevsim/özellik olarak kalmalıdır.
     seasonal_product_types = ["Yazlık", "Kışlık"]
@@ -603,7 +614,7 @@ def is_query_too_general(query, parsed_query, df):
     # no other discriminating context (price, features, target group) is given.
     # Threshold tuned for a 750-product catalog where 5-10 items per type is normal.
     if has_product_type:
-        return matching_product_count > 12
+        return matching_product_count > 20
 
 
     return False
@@ -739,7 +750,8 @@ def normalize_category_consistency(parsed_query, df, query):
             # [Precedence Check] If there is a strong query context main category that differs from
             # the product type's default main category, allow the context category to take precedence
             # ONLY if we can find a matching relaxed product type in that category.
-            if context_main_category is not None and context_main_category != correct_main_category:
+            # Do NOT relax if the user explicitly typed the exact product type in their query.
+            if context_main_category is not None and context_main_category != correct_main_category and not contains_phrase(query, product_type_lower):
                 words = [w for w in product_type_lower.split() if len(w) > 2]
                 relaxed_type = None
                 for word in reversed(words):
@@ -784,9 +796,18 @@ def normalize_category_consistency(parsed_query, df, query):
             (df["sub_category"].astype(str).str.lower() == str(parsed_query["sub_category"]).lower())
         ]
 
-        # Eğer bu ikili dataset'te yoksa sub_category'yi temizle.
+        # Eğer bu ikili dataset'te yoksa, sub_category'nin gerçek main_category'sini bulmaya çalış
         if check_rows.empty:
-            parsed_query["sub_category"] = None
+            sub_category_lower = str(parsed_query["sub_category"]).lower()
+            matched_rows = df[df["sub_category"].astype(str).str.lower() == sub_category_lower]
+            if not matched_rows.empty:
+                unique_main_categories = matched_rows["main_category"].dropna().unique().tolist()
+                if len(unique_main_categories) == 1:
+                    parsed_query["main_category"] = unique_main_categories[0]
+                else:
+                    parsed_query["sub_category"] = None
+            else:
+                parsed_query["sub_category"] = None
 
     # Hâlâ main_category boş ama sub_category varsa, sadece tek ana kategoriye bağlıysa doldur.
     if (

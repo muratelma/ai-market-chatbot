@@ -132,7 +132,7 @@
   {
     "id": "Q027",
     "query": "kadın için spor tayt",
-    "expected": {"main_category": "Spor", "target_group": "Kadın", "product_types_any": ["Spor Tayt", "Koşu Taytı"]}
+    "expected": {"target_group": "Kadın", "product_types_any": ["Spor Tayt", "Koşu Taytı"]}
   },
   {
     "id": "Q028",

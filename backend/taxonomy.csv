@@ -37,7 +37,7 @@ sub_category,Parfüm,parfüm koku deodorant vücut spreyi unisex kadın erkek
 sub_category,Giyilebilir Teknoloji,akıllı saat fitness bileklik nabız oksijen uyku takibi
 sub_category,Aksesuar,kamp aksesuar outdoor ekipman yardımcı ürün
 product_type,Powerbank,telefon şarj taşınabilir şarj cihazı powerbank batarya hızlı şarj
-product_type,Kulaklık,kulaklık bluetooth kablosuz müzik ses gürültü azaltma
+product_type,Kulaklık,kulaklık bluetooth kablosuz müzik dinlemek şarkı ses gürültü azaltma
 product_type,Mouse,mouse kablosuz fare bilgisayar ergonomik sessiz
 product_type,Klavye,klavye mekanik oyuncu gaming rgb bilgisayar yazı yazma
 product_type,Akıllı Saat,akıllı saat spor takibi bildirim giyilebilir teknoloji saat nabız oksijen
@@ -50,8 +50,18 @@ product_type,Serum,saç serumu cilt serumu bakım onarıcı güçlendirici yoğu
 product_type,Pişik Kremi,pişik kremi bebek cilt koruma çinko oksit bebek kızarıklık pişik önlem
 product_type,Araç Şarj Cihazı,araç şarj cihazı araç usb şarj hızlı şarj araç içi çakmak soketi
 product_type,Kahve Makinesi,kahve makinesi filtre espresso kapsül kapçıno türk kahvesi otomatik
-product_type,Kamp Ocağı,kamp ocağı gazlı ocak açık hava pişirme outdoor butan tüp
+product_type,Kamp Ocağı,kamp ocağı gazlı ocak açık hava pişirme outdoor butan tüp kamp yemeği pişirme yemek yapmak
 product_type,Yoga Matı,yoga matı kaymaz yüzey yoga egzersiz spor mat pilates
 product_type,Dekoratif Lamba,dekoratif lamba ahşap süsleme ışık dekor ambient aydınlatma
 product_type,Temizleyici,yüz temizleyici cilt temizleme micellar yüz yıkama jel köpük losyon
 product_type,Uyku Tulumu,uyku tulumu kamp gece soğuk iklim outdoor sıcak tutan
+product_type,Kuru Şampuan,kuru şampuan su gerektirmeyen pudralı yağ emici
+product_type,Tıraş Balmı,tıraş köpüğü jeli hassas cilt krem balsam
+product_type,Göz Kremi,göz kremi morluk altı torbalanma kırışıklık
+product_type,Sırt Çantası,sırt çantası okul seyahat laptop 500 tl
+product_type,Spor Çantası,spor çantası fitness salonu antrenman omuz el
+product_type,Spor Havlusu,havlu spor salonu için ter kurulama yüz mikrofiber
+product_type,Trekking Baton,baton doğa yürüyüşü trekking baston çubuk
+product_type,Tablet Kalemi,dokunmatik kalem stylus tablet için ekran çizim kalem
+product_type,Telefon Kılıfı,kılıf akıllı telefon için koruyucu kapak kılıfı
+product_type,TV Kumandası,televizyon için akıllı kumanda tv uzaktan kumanda

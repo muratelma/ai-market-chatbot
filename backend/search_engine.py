@@ -138,7 +138,12 @@ def semantic_search(query, candidate_df, model, product_embeddings, parsed_query
 
         for feature in parsed_query["features"]:
             if feature.lower() in combined_text:
-                bonus += 0.04
+                row_features = str(row["features"]).lower()
+                row_tags = str(row["tags"]).lower()
+                if feature.lower() in row_features or feature.lower() in row_tags:
+                    bonus += 0.08
+                else:
+                    bonus += 0.04
 
         for context in parsed_query["contexts"]:
             if context.lower() in combined_text:
@@ -154,8 +159,8 @@ def semantic_search(query, candidate_df, model, product_embeddings, parsed_query
                 bonus += 0.10  # Exact match — strong boost
             elif parsed_pt_lower in row_pt_lower or row_pt_lower in parsed_pt_lower:
                 # Special case: "şampuan" query should not match "kuru şampuan" unless "kuru" is in the query.
-                if parsed_pt_lower == "şampuan" and "kuru şampuan" in row_pt_lower and "kuru" not in query.lower():
-                    pass
+                if parsed_pt_lower == "şampuan" and "kuru şampuan" in row_pt_lower and "kuru" not in query.lower() and "susuz" not in query.lower():
+                    bonus -= 0.10
                 else:
                     bonus += 0.03  # Partial / superset match — moderate boost
 
@@ -169,7 +174,7 @@ def semantic_search(query, candidate_df, model, product_embeddings, parsed_query
 
         if parsed_query["target_group"] is not None:
             if str(parsed_query["target_group"]).lower() == str(row["target_group"]).lower():
-                bonus += 0.05
+                bonus += 0.10
 
         final_score = min(row["semantic_score"] + bonus, 0.95)
 
