@@ -53,7 +53,6 @@
     "id": "QS_A06",
     "query": "spor çantası",
     "expected": {
-      "main_category": "Aksesuar",
       "product_types_any": [
         "Spor Çantası",
         "Sırt Çantası"

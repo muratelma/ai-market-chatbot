@@ -1,19 +1,51 @@
 import numpy as np
+import pandas as pd
 import faiss
 
 
 def create_search_text(df):
-    return (
-        df["product_name"].astype(str) + " | " +
-        df["description"].astype(str) + " | " +
-        df["main_category"].astype(str) + " | " +
-        df["sub_category"].astype(str) + " | " +
-        df["target_group"].astype(str) + " | " +
-        df["product_type"].astype(str) + " | " +
-        df["features"].astype(str) + " | " +
-        df["tags"].astype(str) + " | " +
-        df["attributes"].astype(str)
-    ).tolist()
+    texts = []
+    for _, row in df.iterrows():
+        # Clean null values
+        def clean(val):
+            return str(val) if not pd.isna(val) and str(val).lower() != "nan" else ""
+
+        name = clean(row.get("product_name"))
+        desc = clean(row.get("description"))
+        mc = clean(row.get("main_category"))
+        sc = clean(row.get("sub_category"))
+        pt = clean(row.get("product_type"))
+        tg = clean(row.get("target_group"))
+        feat = clean(row.get("features"))
+        tags = clean(row.get("tags"))
+        attr = clean(row.get("attributes"))
+
+        # Build a richer semantic paragraph
+        text = f"Ürün: {name}. "
+        if pt:
+            text += f"Bu bir {pt} ürünüdür. "
+        if mc and sc:
+            text += f"Kategori: {mc} > {sc}. "
+        elif mc:
+            text += f"Kategori: {mc}. "
+        
+        if tg and tg.lower() != "unisex":
+            text += f"Hedef kitle: {tg}. "
+            
+        if feat:
+            text += f"Özellikler: {feat}. "
+        if tags:
+            text += f"Kullanım alanları ve etiketler: {tags}. "
+        if attr:
+            text += f"Teknik detaylar: {attr}. "
+            
+        text += f"Açıklama: {desc}"
+        
+        # Remove extra spaces
+        text = " ".join(text.split())
+        texts.append(text)
+        
+    return texts
 
 def row_contains_any_feature(row, features):
     combined_text = (
@@ -32,22 +64,21 @@ def row_contains_any_feature(row, features):
 def apply_filters(df, parsed_query):
     filtered = df.copy()
 
-    # 1. Price and target_group are strict constraints
+    # 1. Price is the ONLY absolute strict filter
     if parsed_query["min_price"] is not None:
         filtered = filtered[filtered["price"] >= parsed_query["min_price"]]
 
     if parsed_query["max_price"] is not None:
         filtered = filtered[filtered["price"] <= parsed_query["max_price"]]
 
+    base_pool = filtered.copy()
+
+    # 2. Apply strict filters to see if we get a strong candidate pool
     if parsed_query.get("target_group") is not None:
         filtered = filtered[
             filtered["target_group"].astype(str).str.lower() == str(parsed_query["target_group"]).lower()
         ]
 
-    # Keep a copy of strictly filtered candidates (preserving target_group) to fallback on
-    strict_filtered = filtered.copy()
-
-    # 2. Main category and sub category filters (soft: fallback if empty)
     for field in ["main_category", "sub_category"]:
         value = parsed_query.get(field)
         if value is not None:
@@ -57,7 +88,6 @@ def apply_filters(df, parsed_query):
             if not temp.empty:
                 filtered = temp
 
-    # 3. Product type filter (strict: can make it empty)
     product_type = parsed_query.get("product_type")
     if product_type is not None:
         value_lower = str(product_type).lower()
@@ -67,38 +97,22 @@ def apply_filters(df, parsed_query):
             | (product_series.str.contains(value_lower, regex=False, na=False))
             | (product_series.apply(lambda item: item in value_lower))
         )
-        filtered = filtered[mask]
+        temp = filtered[mask]
+        if not temp.empty:
+            filtered = temp
 
-    # If category filter made it empty, fallback to target_group filtered dataframe
-    # only if we don't have a product_type filter constraint (since product_type mismatch should remain empty)
-    if filtered.empty and parsed_query.get("product_type") is None:
-        filtered = strict_filtered
-
-    # Apply feature filter only when the candidate pool is large enough
-    FEATURE_FILTER_MIN_POOL = 10
-    features = parsed_query.get("features", [])
-
-    if features and not filtered.empty and len(filtered) > FEATURE_FILTER_MIN_POOL:
-        feature_mask = []
-        for _, row in filtered.iterrows():
-            feature_mask.append(row_contains_any_feature(row, features))
-        feature_filtered = filtered.loc[feature_mask]
-        if not feature_filtered.empty:
-            filtered = feature_filtered
-
-    return filtered
-
-  
+    # If strict filters produce a strong candidate pool, use it
+    if len(filtered) >= 10:
+        return filtered
+        
+    # Otherwise, if strict filters produce empty or very small/weak candidates,
+    # fall back to the broader candidate pool and let hybrid scoring decide
+    return base_pool
 
 
-def calculate_match_percentage(semantic_score, bonus_score):
-    normalized = (semantic_score - 0.20) / 0.45
-    normalized = max(0, min(1, normalized))
-
-    percentage = 50 + (normalized * 32)
-    percentage += min(bonus_score * 170, 16)
-
-    return int(max(35, min(96, round(percentage))))
+def calculate_match_percentage(final_score):
+    percentage = final_score * 80
+    return int(max(35, min(99, round(percentage))))
 
 
 def semantic_search(query, candidate_df, model, product_embeddings, parsed_query, top_k=5):
@@ -114,17 +128,18 @@ def semantic_search(query, candidate_df, model, product_embeddings, parsed_query
 
     scores = np.dot(candidate_embeddings, query_vector[0])
 
-    top_count = min(max(top_k * 3, top_k), len(candidate_df))
-    top_positions = np.argsort(scores)[::-1][:top_count]
+    top_positions = np.argsort(scores)[::-1]
 
     result_df = candidate_df.iloc[top_positions].copy()
     result_df["semantic_score"] = scores[top_positions]
-    result_df["score"] = scores[top_positions]
+    result_df["score"] = 0.0
     result_df["bonus_score"] = 0.0
+    result_df["penalty_score"] = 0.0
     result_df["match_percent"] = 0
 
     for i, row in result_df.iterrows():
-        bonus = 0
+        bonus = 0.0
+        penalty = 0.0
 
         combined_text = (
             str(row["description"]) + " " +
@@ -136,57 +151,92 @@ def semantic_search(query, candidate_df, model, product_embeddings, parsed_query
             str(row["main_category"])
         ).lower()
 
-        for feature in parsed_query["features"]:
-            if feature.lower() in combined_text:
-                row_features = str(row["features"]).lower()
-                row_tags = str(row["tags"]).lower()
-                if feature.lower() in row_features or feature.lower() in row_tags:
-                    bonus += 0.08
-                else:
-                    bonus += 0.04
-
-        for context in parsed_query["contexts"]:
-            if context.lower() in combined_text:
-                bonus += 0.025
-
-        # Exact product_type match: strongest ranking signal — rewards products
-        # whose type precisely matches what the query asked for (e.g. "Kamp Ocağı"
-        # should outrank "Kamp Tabak Seti" even if both are semantically similar).
-        if parsed_query["product_type"] is not None:
+        # 1. Product Type Match & Penalty
+        if parsed_query.get("product_type") is not None:
             parsed_pt_lower = str(parsed_query["product_type"]).lower()
             row_pt_lower = str(row["product_type"]).lower()
-            if parsed_pt_lower == row_pt_lower:
-                bonus += 0.10  # Exact match — strong boost
+            query_lower = query.lower()
+            
+            is_exact_parsed = (parsed_pt_lower == row_pt_lower)
+            is_explicit = (row_pt_lower in query_lower and len(row_pt_lower) > 3)
+            
+            if is_explicit:
+                explicit_bonus = 0.12 + min(0.08, len(row_pt_lower) * 0.008)
+            else:
+                explicit_bonus = 0.0
+                
+            if is_exact_parsed and not is_explicit:
+                # Smart parser (e.g. "su gerektirmeyen" -> "Kuru Şampuan")
+                bonus += 0.22
+            elif is_exact_parsed and is_explicit:
+                # Generic parser match (e.g. "mouse" in "oyuncu mouse")
+                bonus += max(0.18, explicit_bonus)
+            elif is_explicit:
+                # Dumb parser, but highly specific explicit match
+                bonus += explicit_bonus
             elif parsed_pt_lower in row_pt_lower or row_pt_lower in parsed_pt_lower:
-                # Special case: "şampuan" query should not match "kuru şampuan" unless "kuru" is in the query.
-                if parsed_pt_lower == "şampuan" and "kuru şampuan" in row_pt_lower and "kuru" not in query.lower() and "susuz" not in query.lower():
-                    bonus -= 0.10
+                # Special cases (e.g. Kuru Şampuan vs Şampuan)
+                if parsed_pt_lower == "şampuan" and "kuru şampuan" in row_pt_lower and "kuru" not in query_lower and "susuz" not in query_lower and "su gerektir" not in query_lower:
+                    penalty += 0.15
                 else:
-                    bonus += 0.03  # Partial / superset match — moderate boost
+                    row_words = set(row_pt_lower.split())
+                    query_words = set(query_lower.split())
+                    if len(row_words.intersection(query_words)) > 1:
+                        bonus += 0.08
+                    else:
+                        bonus += 0.05
+            else:
+                penalty += 0.15
 
-        if parsed_query["main_category"] is not None:
+        # 2. Main Category Match & Penalty
+        if parsed_query.get("main_category") is not None:
             if str(parsed_query["main_category"]).lower() == str(row["main_category"]).lower():
+                bonus += 0.04
+            else:
+                penalty += 0.10
+
+        # 3. Sub Category Match
+        if parsed_query.get("sub_category") is not None:
+            if str(parsed_query["sub_category"]).lower() == str(row["sub_category"]).lower():
+                bonus += 0.05
+
+        # 4. Target Group Match & Penalty
+        if parsed_query.get("target_group") is not None:
+            parsed_tg_lower = str(parsed_query["target_group"]).lower()
+            row_tg_lower = str(row["target_group"]).lower()
+            
+            if parsed_tg_lower == row_tg_lower:
+                bonus += 0.08
+            elif row_tg_lower != "nan" and row_tg_lower != "unisex" and parsed_tg_lower != "unisex":
+                # Opposite gender (e.g. Kadın vs Erkek)
+                penalty += 0.30
+                
+        # 5. Taxonomy Match Bonus
+        if parsed_query.get("taxonomy_match") is not None:
+            tax_field = parsed_query["taxonomy_match"]["field"]
+            tax_val = str(parsed_query["taxonomy_match"]["value"]).lower()
+            if tax_field in row and str(row[tax_field]).lower() == tax_val:
                 bonus += 0.06
 
-        if parsed_query["sub_category"] is not None:
-            if str(parsed_query["sub_category"]).lower() == str(row["sub_category"]).lower():
-                bonus += 0.08
-
-        if parsed_query["target_group"] is not None:
-            if str(parsed_query["target_group"]).lower() == str(row["target_group"]).lower():
+        # 6. Feature / Tag / Attribute Bonus
+        for feature in parsed_query.get("features", []):
+            if feature.lower() in combined_text:
                 bonus += 0.10
 
-        final_score = min(row["semantic_score"] + bonus, 0.95)
+        # 7. Context Bonus
+        for context in parsed_query.get("contexts", []):
+            if context.lower() in combined_text:
+                bonus += 0.03
 
+        final_score = row["semantic_score"] + bonus - penalty
+        
         result_df.at[i, "score"] = final_score
         result_df.at[i, "bonus_score"] = bonus
-        result_df.at[i, "match_percent"] = calculate_match_percentage(
-            row["semantic_score"],
-            bonus
-        )
+        result_df.at[i, "penalty_score"] = penalty
+        result_df.at[i, "match_percent"] = calculate_match_percentage(final_score)
 
     result_df = result_df.sort_values(
-        by=["match_percent", "bonus_score", "score"],
+        by=["score", "match_percent"],
         ascending=False
     )
 
@@ -199,18 +249,33 @@ def build_answer(parsed_query, product_count):
     if product_count == 0:
         return "Aradığınız kriterlere uygun ürün bulunamadı. Fiyat aralığını veya filtreleri genişletebilirsiniz."
 
-    has_filter = any([
-        parsed_query["min_price"] is not None,
-        parsed_query["max_price"] is not None,
-        parsed_query["main_category"] is not None,
-        parsed_query["sub_category"] is not None,
-        parsed_query["target_group"] is not None,
-        parsed_query["product_type"] is not None,
-        len(parsed_query["features"]) > 0,
-        len(parsed_query["contexts"]) > 0,
-    ])
+    # Build a context-aware chatbot response
+    parts = []
 
-    if has_filter:
-        return "Arama kriterlerinize en yakın ürünler listelendi."
+    product_type = parsed_query.get("product_type")
+    main_category = parsed_query.get("main_category")
+    target_group = parsed_query.get("target_group")
+    min_price = parsed_query.get("min_price")
+    max_price = parsed_query.get("max_price")
 
-    return "Sorgunuza göre en uygun ürünleri listeledim."
+    # Describe what we found
+    if product_type:
+        parts.append(f"**{product_type}** kategorisinde")
+    elif main_category:
+        parts.append(f"**{main_category}** bölümünde")
+
+    if target_group:
+        parts.append(f"**{target_group}** için")
+
+    if min_price is not None and max_price is not None:
+        parts.append(f"₺{min_price} - ₺{max_price} fiyat aralığında")
+    elif max_price is not None:
+        parts.append(f"₺{max_price} altında")
+    elif min_price is not None:
+        parts.append(f"₺{min_price} üzeri")
+
+    if parts:
+        context = " ".join(parts)
+        return f"{context} size en uygun {product_count} ürün listelendi. 🛍️"
+
+    return f"Sorgunuza göre en uygun {product_count} ürünü listeledim. 🛍️"

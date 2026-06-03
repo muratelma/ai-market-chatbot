@@ -29,12 +29,12 @@ FEATURE_SYNONYMS = {
     "yürüyüş": ["yürüyüş", "outdoor", "rahat"],
     "uyku": ["uyku", "tulum", "mat", "sıcak"],
     # Cooking: tighten to distinguish "yemek yapmak" (cooking) from dishes/plates
-    "yemek": ["pişirme", "ocak", "kamp ocağı", "yemek yapma"],
-    "pişirme": ["pişirme", "ocak", "kamp ocağı"],
-    "pisirme": ["pişirme", "ocak", "kamp ocağı"],
-    "pişir": ["pişirme", "ocak"],
-    "pisir": ["pişirme", "ocak"],
-    "ocak": ["pişirme", "ocak"],
+    "yemek": ["pişirme", "yemek yapma"],
+    "pişirme": ["pişirme"],
+    "pisirme": ["pişirme"],
+    "pişir": ["pişirme"],
+    "pisir": ["pişirme"],
+    "ocak": ["pişirme", "ocak", "kamp ocağı"],
     "yaz": ["yazlık", "hafif", "nefes alabilir"],
     "yazlık": ["yazlık", "hafif", "nefes alabilir"],
     "yazlik": ["yazlık", "hafif", "nefes alabilir"],
@@ -100,7 +100,8 @@ QUERY_ALIASES = [
         },
     },
     {
-        "keywords": ["araç şarj", "arac şarj", "araba şarj", "araç için telefon şarj"],
+        "keywords": ["araç şarj", "arac şarj", "araba şarj", "araç için telefon şarj",
+                     "arabada şarj", "arabada telefon şarj"],
         "fields": {
             "main_category": "Otomotiv",
             "sub_category": "Elektronik",
@@ -115,9 +116,10 @@ QUERY_ALIASES = [
             "features": ["dekoratif", "lamba", "ışık"],
         },
     },
-    # Cooking in camp context: "yemek yapacak" should prefer Kamp Ocağı over dishes/plates
+    # Cooking in camp context
     {
-        "keywords": ["kamp için yemek yapacak", "kamp yemek yapacak", "kamp için pişirme", "kamp ocağı"],
+        "keywords": ["kamp için yemek yapacak", "kamp yemek yapacak", "kamp için pişirme",
+                     "kamp ocağı", "kamp yemeği için ocak", "kamp yemeği ocak"],
         "fields": {
             "main_category": "Kamp",
             "sub_category": "Pişirme",
@@ -136,6 +138,77 @@ QUERY_ALIASES = [
         "keywords": ["robot süpürge", "akıllı süpürge"],
         "fields": {
             "main_category": "Ev & Yaşam",
+        },
+    },
+    # Dry shampoo: "su gerektirmeyen" / "susuz" should map to Kuru Şampuan
+    {
+        "keywords": ["su gerektirmeyen şampuan", "susuz şampuan", "kuru şampuan"],
+        "fields": {
+            "main_category": "Kişisel Bakım",
+            "sub_category": "Saç Bakımı",
+            "product_type": "Kuru Şampuan",
+        },
+    },
+    # Action-to-product: listening to music -> headphones
+    {
+        "keywords": ["müzik dinlemek için", "müzik dinlemek", "şarkı dinlemek"],
+        "fields": {
+            "main_category": "Elektronik",
+            "product_type": "Kulaklık",
+        },
+    },
+    # Tent lighting
+    {
+        "keywords": ["çadır içi aydınlatma", "çadır aydınlatma", "çadır lambası"],
+        "fields": {
+            "main_category": "Kamp",
+            "sub_category": "Aydınlatma",
+            "product_type": "Kamp Lambası",
+        },
+    },
+    # Water bottle / canteen
+    {
+        "keywords": ["su matarası", "matara", "su şişesi"],
+        "fields": {
+            "product_type": "Matara",
+        },
+    },
+    # Computer monitor
+    {
+        "keywords": ["bilgisayar monitörü", "monitör", "bilgisayar ekranı"],
+        "fields": {
+            "main_category": "Elektronik",
+            "sub_category": "Bilgisayar",
+            "product_type": "Monitör",
+        },
+    },
+    # Outdoor pants
+    {
+        "keywords": ["doğa yürüyüşü için pantolon", "outdoor pantolon", "trekking pantolon",
+                     "yürüyüş pantolonu"],
+        "fields": {
+            "main_category": "Giyim",
+            "sub_category": "Pantolon",
+            "product_type": "Kargo Pantolon",
+        },
+    },
+    # Sports towel
+    {
+        "keywords": ["spor havlusu", "spor salonu havlu", "spor salonu için havlu",
+                     "ter havlusu"],
+        "fields": {
+            "main_category": "Spor",
+            "sub_category": "Aksesuar",
+            "product_type": "Spor Havlusu",
+        },
+    },
+    # Keyboard Mouse Set
+    {
+        "keywords": ["klavye mouse takım", "klavye fare set"],
+        "fields": {
+            "main_category": "Elektronik",
+            "sub_category": "Bilgisayar",
+            "product_type": "Klavye Mouse Set",
         },
     },
 ]
@@ -222,6 +295,17 @@ def extract_price_range(query):
         if match:
             max_price = int(match.group(1))
             return min_price, max_price
+
+    # "civarı" / "civarında" / "dolaylarında" -> apply ±30% tolerance
+    approx_match = re.search(
+        r"(\d+)\s*(?:tl|lira)?\s*(?:civarı|civarında|civarinda|dolaylarında|dolaylarinda|dolayı|dolayi)",
+        q
+    )
+    if approx_match:
+        center = int(approx_match.group(1))
+        min_price = int(center * 0.7)
+        max_price = int(center * 1.3)
+        return min_price, max_price
 
     single_match = re.search(r"(\d+)\s*(?:tl|lira)", q)
     if single_match:

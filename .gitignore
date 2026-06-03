@@ -30,3 +30,4 @@ backend/raw_products.csv
 backend/products_prepared.csvscratch/
 .cursor/
 backend/scratch/
+backend/report.json
