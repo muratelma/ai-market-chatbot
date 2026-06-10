@@ -240,6 +240,20 @@ def semantic_search(query, candidate_df, model, product_embeddings, parsed_query
         ascending=False
     )
 
+    # 8. Smart Threshold for Nonsense Queries
+    # If the query has no strong categories/product types AND the top semantic score is very low,
+    # it's likely a nonsense query (e.g. "uzay mekiği")
+    if not result_df.empty:
+        has_hard_filter = (
+            parsed_query.get("main_category") is not None or
+            parsed_query.get("sub_category") is not None or
+            parsed_query.get("product_type") is not None or
+            parsed_query.get("taxonomy_match") is not None
+        )
+        max_score = result_df["score"].max()
+        if not has_hard_filter and max_score < 0.40:
+            return pd.DataFrame(columns=result_df.columns)
+
     result_df = result_df.head(top_k).reset_index(drop=True)
 
     return result_df
@@ -247,6 +261,16 @@ def semantic_search(query, candidate_df, model, product_embeddings, parsed_query
 
 def build_answer(parsed_query, product_count):
     if product_count == 0:
+        has_hard_filter = (
+            parsed_query.get("main_category") is not None or
+            parsed_query.get("sub_category") is not None or
+            parsed_query.get("product_type") is not None or
+            parsed_query.get("taxonomy_match") is not None or
+            parsed_query.get("min_price") is not None or
+            parsed_query.get("max_price") is not None
+        )
+        if not has_hard_filter:
+            return "Maalesef ne aradığınızı tam olarak anlayamadım veya stoklarımızda bu tip bir ürün bulunmuyor. Lütfen farklı kelimelerle tekrar deneyin."
         return "Aradığınız kriterlere uygun ürün bulunamadı. Fiyat aralığını veya filtreleri genişletebilirsiniz."
 
     # Build a context-aware chatbot response
