@@ -67,3 +67,12 @@ TAXONOMY_CSV_PATH = _resolve_data_path("AI_MARKET_TAXONOMY_CSV", "taxonomy.csv")
 SEARCH_TOP_K = _get_env_int("AI_MARKET_TOP_K", 5, minimum=1)
 TAXONOMY_MATCH_THRESHOLD = _get_env_float("AI_MARKET_TAXONOMY_MATCH_THRESHOLD", 0.65)
 
+# ---- Ollama configuration ----
+OLLAMA_BASE_URL = _get_env_str("OLLAMA_BASE_URL", "http://localhost:11434")
+OLLAMA_MODEL = _get_env_str("OLLAMA_MODEL", "gemma3:4b")
+OLLAMA_ENABLED = _get_env_str("OLLAMA_ENABLED", "true").lower() in ("true", "1", "yes")
+OLLAMA_TIMEOUT_SECONDS = _get_env_int("OLLAMA_TIMEOUT_SECONDS", 15, minimum=3)
+OLLAMA_CONFIDENCE_THRESHOLD = _get_env_float(
+    "OLLAMA_CONFIDENCE_THRESHOLD", 0.6, minimum=0.0, maximum=1.0
+)
+
