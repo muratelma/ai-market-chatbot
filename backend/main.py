@@ -24,6 +24,7 @@ from search_engine import (
     semantic_search,
     build_answer,
 )
+from chat_intent import classify_intent, INTENT_PRODUCT_SEARCH, INTENT_CLARIFICATION_FOLLOWUP, INTENT_NONSENSE
 from chat_memory import get_or_create_session, resolve_follow_up, update_session
 from chat_normalizer import normalize_query
 from response_rewriter import rewrite_response
@@ -80,11 +81,43 @@ def root():
 def search_products(req: QueryRequest):
     original_query = req.query.strip()
 
-    # ---- 1. Session memory: resolve follow-ups ----
+    # ---- 0. Session memory: get or create ----
     session = get_or_create_session(req.session_id)
+
+    # ---- 1. Intent classification ----
+    intent_result = classify_intent(
+        original_query,
+        has_pending_clarification=session.pending_clarification,
+    )
+
+    # Non-search intents: return immediately without touching search
+    if intent_result.intent not in (
+        INTENT_PRODUCT_SEARCH,
+        INTENT_CLARIFICATION_FOLLOWUP,
+        INTENT_NONSENSE,
+    ):
+        logger.info("Intent: %s → returning direct response.", intent_result.intent)
+        return {
+            "answer": intent_result.response,
+            "products": [],
+            "parsed_query": {},
+            "needs_clarification": False,
+            "follow_up_question": None,
+            "original_query": original_query,
+            "normalized_query": original_query,
+            "normalization_used": False,
+            "normalization_confidence": 0.0,
+            "ollama_used": False,
+            "ollama_fallback_reason": None,
+            "session_id": session.session_id,
+            "intent": intent_result.intent,
+            "response_source": f"intent_{intent_result.intent}",
+        }
+
+    # ---- 2. Resolve follow-ups ----
     effective_query = resolve_follow_up(original_query, session)
 
-    # ---- 2. Ollama query normalization (with fallback) ----
+    # ---- 3. Ollama query normalization (with fallback) ----
     normalization = normalize_query(effective_query)
     search_query = normalization.normalized_query
 
@@ -97,6 +130,7 @@ def search_products(req: QueryRequest):
         "ollama_used": normalization.used,
         "ollama_fallback_reason": normalization.fallback_reason,
         "session_id": session.session_id,
+        "intent": intent_result.intent,
     }
 
     # ---- 3. Handle Ollama clarification ----
