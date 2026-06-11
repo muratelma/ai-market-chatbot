@@ -31,3 +31,4 @@ backend/products_prepared.csvscratch/
 .cursor/
 backend/scratch/
 backend/report.json
+frontend/vite.config.js.bak
