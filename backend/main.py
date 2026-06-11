@@ -114,6 +114,29 @@ def search_products(req: QueryRequest):
             "response_source": f"intent_{intent_result.intent}",
         }
 
+    # Nonsense intent with high confidence: return a friendly no-result message
+    # instead of sending impossible queries through the search pipeline
+    if intent_result.intent == INTENT_NONSENSE and intent_result.confidence >= 0.7:
+        logger.info("Intent: nonsense (confidence=%.2f) → returning no-result.", intent_result.confidence)
+        return {
+            "answer": "Maalesef bu tür bir ürün katalogumuzda bulunmuyor. 😅 "
+                      "Farklı bir ürün aramak ister misin? Örneğin "
+                      "\"kamp ocağı\", \"spor ayakkabı\" veya \"kablosuz kulaklık\" gibi.",
+            "products": [],
+            "parsed_query": {},
+            "needs_clarification": False,
+            "follow_up_question": None,
+            "original_query": original_query,
+            "normalized_query": original_query,
+            "normalization_used": False,
+            "normalization_confidence": 0.0,
+            "ollama_used": intent_result.method == "ollama",
+            "ollama_fallback_reason": None,
+            "session_id": session.session_id,
+            "intent": intent_result.intent,
+            "response_source": "intent_nonsense",
+        }
+
     # ---- 2. Resolve follow-ups ----
     effective_query = resolve_follow_up(original_query, session)
 

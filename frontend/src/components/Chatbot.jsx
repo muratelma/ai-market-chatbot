@@ -192,31 +192,35 @@ function Chatbot({ isOpen, onToggle, initialQuery }) {
                     {msg.products.map((product, idx) => (
                       <div className="chatbot-product-card" key={idx}>
                         <div className="chatbot-product-top">
-                          <div className="chatbot-product-emoji">
-                            {product.image || "🛍️"}
+                          <div className="chatbot-product-image">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                              <line x1="3" y1="6" x2="21" y2="6" />
+                              <path d="M16 10a4 4 0 0 1-8 0" />
+                            </svg>
+                          </div>
+                          <div className="chatbot-product-info">
+                            <h4 className="chatbot-product-name">{product.name}</h4>
+                            <div className="chatbot-product-meta">
+                              {product.tags && product.tags[0] && (
+                                <span className="chatbot-product-tag">
+                                  {product.tags[0]}
+                                  {product.tags[1] && ` › ${product.tags[1]}`}
+                                </span>
+                              )}
+                              {product.tags && product.tags[3] && (
+                                <span className="chatbot-product-tag">
+                                  {product.tags[3]}
+                                </span>
+                              )}
+                            </div>
                           </div>
                           <div className="chatbot-product-match">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
                               <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                             </svg>
-                            {product.match} Uyum
+                            {product.match}
                           </div>
-                        </div>
-
-                        <h4 className="chatbot-product-name">{product.name}</h4>
-
-                        <div className="chatbot-product-meta">
-                          {product.tags && product.tags[0] && (
-                            <span className="chatbot-product-meta-item">
-                              📁 {product.tags[0]}
-                              {product.tags[1] && ` › ${product.tags[1]}`}
-                            </span>
-                          )}
-                          {product.tags && product.tags[3] && (
-                            <span className="chatbot-product-meta-item">
-                              🏷️ {product.tags[3]}
-                            </span>
-                          )}
                         </div>
 
                         <p className="chatbot-product-desc">
