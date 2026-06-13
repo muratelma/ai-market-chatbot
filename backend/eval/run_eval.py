@@ -1,5 +1,6 @@
 import argparse
 import json
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -26,7 +27,31 @@ from query_parser import (  # noqa: E402
     get_clarification_response,
     parse_query,
 )
-from search_engine import apply_filters, create_search_text, semantic_search  # noqa: E402
+from search_engine import apply_filters, create_search_text, semantic_search, diversify_results  # noqa: E402
+from response_planner import build_response_plan, MODE_BROAD_SEARCH, MODE_FOCUSED_SEARCH  # noqa: E402
+
+
+# Keep this list in sync with main._VAGUE_TOKENS.  Duplicated here rather
+# than imported so the eval doesn't trigger main.py's FastAPI / model boot.
+_VAGUE_TOKENS: frozenset[str] = frozenset({
+    "ürün", "urun", "ürünü", "urunu", "ürüne", "urune",
+    "ürünler", "urunler", "ürünleri", "urunleri",
+    "ürünlerden", "urunlerden", "ürününü", "urununu",
+    "şey", "sey", "şeyi", "seyi", "şeyler", "seyler",
+    "bir", "biraz", "ne", "neyi", "nesi", "neler",
+    "öner", "oner", "öneri", "oneri", "tavsiye", "önerir", "onerir",
+    "arıyorum", "ariyorum", "istiyorum", "lazım", "lazim",
+    "almalıyım", "almaliyim", "alabilirim", "alabilir",
+    "yapabilirim", "yapabilir", "almak", "alalım", "alalim",
+    "için", "icin", "lütfen", "lutfen",
+})
+
+
+def _is_vague_query(query: str) -> bool:
+    tokens = re.findall(r"\w+", query.lower())
+    if not tokens:
+        return True
+    return all(t in _VAGUE_TOKENS for t in tokens)
 
 
 @dataclass
@@ -81,24 +106,41 @@ def run_single_query(context: EvalContext, query: str) -> dict[str, Any]:
         taxonomy_match_threshold=TAXONOMY_MATCH_THRESHOLD,
     )
 
+    response_plan = build_response_plan(parsed_query, query, context.products_df)
+
     clarification = get_clarification_response(query, parsed_query, context.products_df)
 
     if clarification.get("no_catalog_match"):
+        # Vague intent → clarification (mirrors main.py).  Specific but
+        # absent items ("uzay mekiği") still return as no-result.
+        if _is_vague_query(query):
+            return {
+                "needs_clarification": True,
+                "no_catalog_match": True,
+                "products": [],
+                "parsed_query": parsed_query,
+                "response_mode": response_plan.mode,
+            }
         return {
             "needs_clarification": False,
             "no_catalog_match": True,
             "products": [],
             "parsed_query": parsed_query,
+            "response_mode": response_plan.mode,
         }
 
     if clarification.get("needs_clarification"):
-        return {
-            "needs_clarification": True,
-            "no_catalog_match": False,
-            "products": [],
-            "parsed_query": parsed_query,
-            "follow_up_question": clarification.get("follow_up_question"),
-        }
+        # Override clarification for broad_search and focused_search modes.
+        if response_plan.mode not in (MODE_BROAD_SEARCH, MODE_FOCUSED_SEARCH):
+            return {
+                "needs_clarification": True,
+                "no_catalog_match": False,
+                "products": [],
+                "parsed_query": parsed_query,
+                "follow_up_question": clarification.get("follow_up_question"),
+                "response_mode": response_plan.mode,
+            }
+        # else: fall through to search with diversification
 
     filtered_df = apply_filters(context.products_df, parsed_query)
 
@@ -113,9 +155,15 @@ def run_single_query(context: EvalContext, query: str) -> dict[str, Any]:
             "no_catalog_match": False,
             "products": [],
             "parsed_query": parsed_query,
+            "response_mode": response_plan.mode,
         }
 
     candidate_df = filtered_df if not filtered_df.empty else context.products_df.copy()
+
+    # For broad_search, fetch more candidates so diversification has material
+    search_top_k = context.top_k
+    if response_plan.diversify_results:
+        search_top_k = max(context.top_k * 4, 20)
 
     result_df = semantic_search(
         query,
@@ -123,8 +171,12 @@ def run_single_query(context: EvalContext, query: str) -> dict[str, Any]:
         context.model,
         context.product_embeddings,
         parsed_query,
-        top_k=context.top_k,
+        top_k=search_top_k,
     )
+
+    # Apply diversification for broad_search
+    if response_plan.diversify_results and not result_df.empty:
+        result_df = diversify_results(result_df, top_k=context.top_k)
 
     products = []
     for _, row in result_df.iterrows():
@@ -144,6 +196,7 @@ def run_single_query(context: EvalContext, query: str) -> dict[str, Any]:
         "no_catalog_match": False,
         "products": products,
         "parsed_query": parsed_query,
+        "response_mode": response_plan.mode,
     }
 
 

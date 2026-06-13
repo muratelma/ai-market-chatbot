@@ -58,14 +58,14 @@ Katalogda şu alanlar var: product_name, description, main_category, sub_categor
 5. Argo, günlük konuşma, yazım hatası ve dolaylı ifadeleri katalog/arama dostu dile çevir.
 6. Eğer kullanıcının ne aradığı belirsizse, düşük confidence ver ve clarification_question yaz.
 7. Eğer mesaj bir ürün aramasıyla hiç ilgili değilse (selamlama, sohbet vb.), orijinal metni aynen döndür ve confidence 1.0 yap.
+8. Eğer kullanıcı spesifik bir ürün tipi (örn: saç kremi, serum, maske, vb.) belirtmişse, O ÜRÜN TİPİNİ KORU. Asla şampuan ile değiştirme veya şampuan ekleme.
+9. Kullanıcı sadece bir problemden bahsedip "ürün", "ne kullanabilirim" veya "öner" diyorsa, sorguyu spesifik bir ürün tipine (örn. şampuan) daraltma. Genel bir ürün araması olarak (örn. "saç bakım ürünü") bırak.
 
 ## Normalleştirme örnekleri
 - "papuç lazım" → "ayakkabı"
 - "pabuç bakıyorum" → "ayakkabı"
 - "şarjım dışarıda bitiyor" → "telefon için taşınabilir şarj powerbank"
 - "telefonum hemen bitiyor" → "telefon için powerbank"
-- "saçım hemen yağlanıyor" → "yağlı saç için şampuan"
-- "kepek var" → "kepek karşıtı şampuan"
 - "kampda yemek yapacağım" → "kamp için yemek pişirme ürünü kamp ocağı"
 - "kamp için yemek yapacak şey" → "kamp ocağı veya kamp mutfak seti"
 - "kafa feneri lazım" → "baş lambası kafa lambası"
@@ -75,6 +75,13 @@ Katalogda şu alanlar var: product_name, description, main_category, sub_categor
 - "ev süpürsün kendi kendine" → "robot süpürge"
 - "su gerektirmeyen şampuan" → "kuru şampuan"
 - "yemek yapmalık kamp ürünü" → "kamp ocağı veya kamp mutfak seti"
+- "saç kremi arıyorum" → "saç kremi arıyorum"
+- "saç dökülmesi için saç kremi arıyorum" → "saç dökülmesi saç kremi"
+- "saç dökülmesi problemi için ürün arıyorum" → "saç dökülmesi için saç bakım ürünü"
+- "saç dökülmesine iyi gelen ürün öner" → "saç dökülmesi için saç bakım ürünü"
+- "saç dökülmesi için ne kullanabilirim" → "saç dökülmesi için saç bakım ürünü"
+- "saçım hemen yağlanıyor" → "yağlı saç için şampuan veya bakım ürünü"
+- "kepek var" → "kepek karşıtı şampuan veya bakım ürünü"
 
 ## Yanıt formatı
 Yalnızca geçerli JSON döndür, başka bir şey yazma.

@@ -152,32 +152,42 @@
   {
     "id": "Q031",
     "query": "ayakkabı öner",
-    "expects_clarification": true
+    "expected": {"main_category": "Ayakkabı"},
+    "expected_response_mode": "broad_search",
+    "comment": "Was clarification-only. Now returns diverse products via broad_search."
   },
   {
     "id": "Q032",
     "query": "elbise öner",
-    "expects_clarification": true
+    "expected": {"main_category": "Giyim", "sub_category": "Elbise"},
+    "expected_response_mode": "focused_search",
+    "comment": "sub_category=Elbise detected → focused_search, clarification overridden"
   },
   {
     "id": "Q033",
     "query": "şampuan öner",
-    "expects_clarification": true
+    "expected": {"main_category": "Kişisel Bakım", "product_types_any": ["Şampuan"]},
+    "comment": "product_type=Şampuan detected → focused_search"
   },
   {
     "id": "Q034",
     "query": "elektronik öner",
-    "expects_clarification": true
+    "expected": {"main_category": "Elektronik"},
+    "expected_response_mode": "broad_search",
+    "comment": "Was clarification-only. Now returns diverse products via broad_search."
   },
   {
     "id": "Q035",
     "query": "spor ürünü öner",
-    "expects_clarification": true
+    "expected": {"main_category": "Spor"},
+    "expected_response_mode": "broad_search",
+    "comment": "Was clarification-only. Now returns diverse products via broad_search."
   },
   {
     "id": "Q036",
     "query": "1500 TL altında ürün",
-    "expects_clarification": true
+    "expects_clarification": true,
+    "comment": "Price only, no category → still needs clarification"
   },
   {
     "id": "Q037",
@@ -198,5 +208,45 @@
     "id": "Q040",
     "query": "telepati güçlendirici cihaz istiyorum",
     "expects_empty_result": true
+  },
+  {
+    "id": "Q041",
+    "query": "kamp için ürün arıyorum",
+    "expected": {"main_category": "Kamp"},
+    "expected_response_mode": "broad_search",
+    "comment": "Broad recommendation: should return diverse camp products"
+  },
+  {
+    "id": "Q042",
+    "query": "saç dökülmesi için ürün öner",
+    "expected": {"main_category": "Kişisel Bakım"},
+    "expected_response_mode": "broad_search",
+    "comment": "Problem-based broad: should return diverse hair care products"
+  },
+  {
+    "id": "Q043",
+    "query": "kuru cilt için ne kullanabilirim",
+    "expected": {"main_category": "Kişisel Bakım"},
+    "expected_response_mode": "broad_search",
+    "comment": "Problem-based broad: should return diverse skin care products"
+  },
+  {
+    "id": "Q044",
+    "query": "ürün öner",
+    "expects_empty_result": true,
+    "comment": "Completely vague: no product signals → no_catalog_match (empty result)"
+  },
+  {
+    "id": "Q045",
+    "query": "bir şey lazım",
+    "expects_empty_result": true,
+    "comment": "Completely vague: no product signals → no_catalog_match (empty result)"
+  },
+  {
+    "id": "Q046",
+    "query": "kamp ocağı arıyorum",
+    "expected": {"main_category": "Kamp", "product_types_any": ["Kamp Ocağı"]},
+    "expected_response_mode": "focused_search",
+    "comment": "Exact product type → focused_search, no diversification"
   }
 ]

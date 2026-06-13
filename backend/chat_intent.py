@@ -32,6 +32,7 @@ INTENT_GREETING = "greeting"
 INTENT_HELP = "help"
 INTENT_THANKS = "thanks"
 INTENT_GOODBYE = "goodbye"
+INTENT_WELLBEING = "wellbeing"
 INTENT_PRODUCT_SEARCH = "product_search"
 INTENT_CLARIFICATION_FOLLOWUP = "clarification_followup"
 INTENT_NONSENSE = "nonsense"
@@ -61,7 +62,6 @@ _GREETING_EXACT = {
     "meraba", "mrb", "slm", "sa", "selamun aleyküm",
     "selamün aleyküm", "günaydın", "iyi akşamlar",
     "iyi günler", "iyi geceler", "hayırlı günler",
-    "naber", "nbr", "nasılsın", "nasilsin",
 }
 
 _GREETING_PATTERNS: list[re.Pattern] = [
@@ -106,6 +106,16 @@ _GOODBYE_PATTERNS: list[re.Pattern] = [
     re.compile(r"\b(görüşürüz|gorusuruz|hoşça\s*kal|hosca\s*kal|güle\s*güle|gule\s*gule|bye|bay\s*bay)\b", re.IGNORECASE),
 ]
 
+_WELLBEING_EXACT = {
+    "nasılsın", "nasilsin", "iyi misin", "naber", "nbr",
+    "ne haber", "keyfin nasıl", "napıyorsun", "napiyorsun",
+    "ne yapıyorsun", "ne yapiyorsun",
+}
+
+_WELLBEING_PATTERNS: list[re.Pattern] = [
+    re.compile(r"\b(nasılsın|nasilsin|iyi\s*misin|naber|ne\s*haber|keyfin\s*nasıl|napıyorsun|napiyorsun)\b", re.IGNORECASE),
+]
+
 # Words that strongly signal a product search — used to reject false
 # positives when a greeting/thanks word co-occurs with product intent.
 _PRODUCT_SIGNAL_PATTERNS: list[re.Pattern] = [
@@ -147,6 +157,10 @@ GOODBYE_RESPONSES = [
     "Görüşmek üzere! 👋 İyi alışverişler dilerim.",
 ]
 
+WELLBEING_RESPONSES = [
+    "İyiyim, teşekkür ederim 😊 Sana ürün bulma konusunda yardımcı olmaya hazırım. Ne arıyorsun?",
+]
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -173,10 +187,11 @@ _INTENT_CLASSIFIER_PROMPT = """\
 Kullanıcının mesajını aşağıdaki kategorilerden birine sınıfla.
 
 Kategoriler:
-- greeting: Selamlama (merhaba, selam, nasılsın vb.)
+- greeting: Selamlama (merhaba, selam vb.)
 - help: Ne yapabilirsin, nasıl çalışıyorsun, yardım vb.
 - thanks: Teşekkür (teşekkürler, sağ ol vb.)
 - goodbye: Vedalaşma (görüşürüz, hoşça kal vb.)
+- wellbeing: Hal hatır sorma (nasılsın, iyi misin, naber vb.)
 - product_search: Ürün arama niyeti var (herhangi bir ürün, fiyat, kategori, ihtiyaç belirtilmiş)
 - nonsense: Anlamsız, alakasız veya sınıflandırılamayan mesaj
 
@@ -204,7 +219,7 @@ def _classify_with_ollama(text: str) -> IntentResult | None:
 
     valid_intents = {
         INTENT_GREETING, INTENT_HELP, INTENT_THANKS,
-        INTENT_GOODBYE, INTENT_PRODUCT_SEARCH, INTENT_NONSENSE,
+        INTENT_GOODBYE, INTENT_WELLBEING, INTENT_PRODUCT_SEARCH, INTENT_NONSENSE,
     }
 
     if intent not in valid_intents:
@@ -220,6 +235,8 @@ def _classify_with_ollama(text: str) -> IntentResult | None:
         response = THANKS_RESPONSES[0]
     elif intent == INTENT_GOODBYE:
         response = GOODBYE_RESPONSES[0]
+    elif intent == INTENT_WELLBEING:
+        response = WELLBEING_RESPONSES[0]
 
     return IntentResult(
         intent=intent,
@@ -290,6 +307,11 @@ def classify_intent(message: str, has_pending_clarification: bool = False) -> In
         len(text_lower.split()) <= 4 and _matches_pattern(text, _GOODBYE_PATTERNS)
     ):
         return IntentResult(intent=INTENT_GOODBYE, response=GOODBYE_RESPONSES[0])
+
+    if _matches_exact(text_lower, _WELLBEING_EXACT) or (
+        len(text_lower.split()) <= 4 and _matches_pattern(text, _WELLBEING_PATTERNS)
+    ):
+        return IntentResult(intent=INTENT_WELLBEING, response=WELLBEING_RESPONSES[0])
 
     # ---- Short ambiguous messages: try Ollama only for very short input ----
     # Messages of 3+ words that didn't match any chat pattern are very likely

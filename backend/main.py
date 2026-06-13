@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import Optional
 
 from fastapi import FastAPI
@@ -22,12 +23,14 @@ from search_engine import (
     create_search_text,
     apply_filters,
     semantic_search,
+    diversify_results,
     build_answer,
 )
 from chat_intent import classify_intent, INTENT_PRODUCT_SEARCH, INTENT_CLARIFICATION_FOLLOWUP, INTENT_NONSENSE
 from chat_memory import get_or_create_session, resolve_follow_up, update_session
 from chat_normalizer import normalize_query
 from response_rewriter import rewrite_response
+from response_planner import build_response_plan, MODE_BROAD_SEARCH, MODE_FOCUSED_SEARCH
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -47,6 +50,41 @@ app.add_middleware(
 class QueryRequest(BaseModel):
     query: str
     session_id: Optional[str] = None
+
+
+# Tokens that, taken alone, signal a vague request ("ürün öner",
+# "bir şey lazım", "ne almalıyım") rather than a specific missing item
+# ("uzay mekiği", "zihin okuma cihazı").  When no parser signal fires
+# AND every token is in this set, return a clarification prompt instead
+# of the no-result template.
+_VAGUE_TOKENS: frozenset[str] = frozenset({
+    "ürün", "urun", "ürünü", "urunu", "ürüne", "urune",
+    "ürünler", "urunler", "ürünleri", "urunleri",
+    "ürünlerden", "urunlerden", "ürününü", "urununu",
+    "şey", "sey", "şeyi", "seyi", "şeyler", "seyler",
+    "bir", "biraz", "ne", "neyi", "nesi", "neler",
+    "öner", "oner", "öneri", "oneri", "tavsiye", "önerir", "onerir",
+    "ver", "versene", "verir", "verebilir", "verebilirsin",
+    "arıyorum", "ariyorum", "istiyorum", "lazım", "lazim",
+    "almalıyım", "almaliyim", "alabilirim", "alabilir",
+    "yapabilirim", "yapabilir", "almak", "alalım", "alalim",
+    "için", "icin", "lütfen", "lutfen",
+})
+
+_VAGUE_CLARIFICATION_QUESTION = (
+    "Tam olarak ne aradığını yazar mısın? Kategori, kullanım amacı veya "
+    "bütçe gibi bilgilerle yardımcı olabilirim — örneğin \"yağlı saç için "
+    "şampuan\" veya \"1500 TL altında erkek ayakkabı\" gibi."
+)
+
+
+def _is_vague_query(query: str) -> bool:
+    """Return True when the query consists only of generic intent/filler
+    tokens and contains no concrete content noun."""
+    tokens = re.findall(r"\w+", query.lower())
+    if not tokens:
+        return True
+    return all(t in _VAGUE_TOKENS for t in tokens)
 
 
 print("Model yükleniyor...")
@@ -137,6 +175,47 @@ def search_products(req: QueryRequest):
             "response_source": "intent_nonsense",
         }
 
+    # ---- 1b. Short-circuit vague requests before normalization ----
+    # When Ollama is enabled, "ürün öner" gets normalized into a concrete
+    # category (e.g. "saç bakım ürünü"), which the parser then resolves to a
+    # real sub-category and returns products for.  That hides the fact that the
+    # user never told us *what* they want.  Catch vague queries on the raw text
+    # first and ask for clarification — without running normalize/parse/search.
+    if _is_vague_query(original_query):
+        update_session(
+            session,
+            user_query=original_query,
+            normalized_query=original_query,
+            pending_clarification=True,
+        )
+
+        answer, rewriter_used = rewrite_response(
+            original_query=original_query,
+            normalized_query=original_query,
+            parsed_query={},
+            products=[],
+            result_status="clarification_needed",
+            clarification_question=_VAGUE_CLARIFICATION_QUESTION,
+        )
+
+        return {
+            "answer": answer,
+            "products": [],
+            "parsed_query": {},
+            "needs_clarification": True,
+            "follow_up_question": _VAGUE_CLARIFICATION_QUESTION,
+            "original_query": original_query,
+            "normalized_query": original_query,
+            "normalization_used": False,
+            "normalization_confidence": 0.0,
+            "ollama_used": False,
+            "ollama_fallback_reason": None,
+            "session_id": session.session_id,
+            "intent": intent_result.intent,
+            "response_mode": "clarification_only",
+            "response_source": "ollama_vague_clarification" if rewriter_used else "template_vague_clarification",
+        }
+
     # ---- 2. Resolve follow-ups ----
     effective_query = resolve_follow_up(original_query, session)
 
@@ -156,8 +235,83 @@ def search_products(req: QueryRequest):
         "intent": intent_result.intent,
     }
 
-    # ---- 3. Handle Ollama clarification ----
-    if normalization.needs_clarification and normalization.clarification_question:
+    # ---- 4. Existing parse_query ----
+    # ``original_query`` is forwarded so the parser's broad-intent strip
+    # checks the user's actual words (Ollama can expand "ürün öner" into
+    # "saç bakım ürünü", which would otherwise mask the broad request).
+    parsed_query = parse_query(
+        search_query,
+        df,
+        model,
+        taxonomy_embeddings,
+        taxonomy_records,
+        taxonomy_match_threshold=TAXONOMY_MATCH_THRESHOLD,
+        original_query=effective_query,
+    )
+
+    # ---- 4b. Fall back to the original query when normalization broke parsing ----
+    # Ollama normalization is non-deterministic and can corrupt a perfectly
+    # parseable phrase in two ways:
+    #   (a) inflect it past the parser, e.g. "özel gün için kadın elbise öner"
+    #       → "kadın elbiseleri", which yields NO category signal; or
+    #   (b) hallucinate an unrelated category, e.g. "elbise tavsiye et" →
+    #       "baharatlık", which parses to a *different* (wrong) category.
+    # The user's literal words are authoritative for category identity, so when
+    # the original query parses to a category that the normalized query either
+    # lost or contradicts, re-parse and search on the original instead.
+    def _has_category_signal(pq: dict) -> bool:
+        return any([pq.get("main_category"), pq.get("sub_category"), pq.get("product_type")])
+
+    if effective_query.strip() and effective_query != search_query:
+        original_parsed = parse_query(
+            effective_query,
+            df,
+            model,
+            taxonomy_embeddings,
+            taxonomy_records,
+            taxonomy_match_threshold=TAXONOMY_MATCH_THRESHOLD,
+            original_query=effective_query,
+        )
+        if _has_category_signal(original_parsed):
+            normalization_lost_category = not _has_category_signal(parsed_query)
+            normalization_changed_category = bool(
+                original_parsed.get("main_category")
+                and original_parsed.get("main_category") != parsed_query.get("main_category")
+            )
+            if normalization_lost_category or normalization_changed_category:
+                logger.info(
+                    "Normalization %s category (%r → %r); falling back to original query.",
+                    "dropped" if normalization_lost_category else "changed",
+                    effective_query,
+                    search_query,
+                )
+                parsed_query = original_parsed
+                search_query = effective_query
+
+    # ---- 5. Build response plan ----
+    response_plan = build_response_plan(
+        parsed_query, search_query, df, original_query=effective_query
+    )
+    logger.info(
+        "Response plan: mode=%s, diversify=%s, problem=%s, context=%s",
+        response_plan.mode,
+        response_plan.diversify_results,
+        response_plan.user_problem,
+        response_plan.context_area,
+    )
+
+    # ---- 5b. Handle Ollama clarification ----
+    # The Ollama normalizer can over-eagerly ask for clarification even when
+    # the user already gave concrete product signals (e.g. "özel gün için
+    # kadın elbise öner" → category + target + context all present).  Only
+    # honor its clarification request when the parser ALSO failed to find a
+    # searchable category — i.e. the plan is not a search mode.  When the plan
+    # is broad/focused search, the user told us enough; proceed to products.
+    if (
+        normalization.needs_clarification
+        and normalization.clarification_question
+        and response_plan.mode not in (MODE_BROAD_SEARCH, MODE_FOCUSED_SEARCH)
+    ):
         update_session(
             session,
             user_query=original_query,
@@ -169,36 +323,66 @@ def search_products(req: QueryRequest):
         answer, rewriter_used = rewrite_response(
             original_query=original_query,
             normalized_query=normalization.normalized_query,
-            parsed_query={},
+            parsed_query=parsed_query,
             products=[],
             result_status="clarification_needed",
             clarification_question=normalization.clarification_question,
+            response_plan=response_plan,
         )
 
         return {
             "answer": answer,
             "products": [],
-            "parsed_query": {},
+            "parsed_query": parsed_query,
             "needs_clarification": True,
             "follow_up_question": normalization.clarification_question,
             **debug_info,
+            "response_mode": response_plan.mode,
             "response_source": "ollama_clarification" if rewriter_used else "ollama_clarification_template",
         }
 
-    # ---- 4. Existing parse_query (UNCHANGED) ----
-    parsed_query = parse_query(
-        search_query,
-        df,
-        model,
-        taxonomy_embeddings,
-        taxonomy_records,
-        taxonomy_match_threshold=TAXONOMY_MATCH_THRESHOLD,
-    )
-
-    # ---- 5. Existing clarification check (UNCHANGED) ----
+    # ---- 6. Clarification check ----
+    # For broad_search mode, we override the normal clarification behavior:
+    # instead of returning clarification-only, we run the search with
+    # diversification and include a follow-up question in the response.
     clarification = get_clarification_response(search_query, parsed_query, df)
 
     if clarification.get("no_catalog_match"):
+        # Distinguish "vague" requests ("ürün öner", "bir şey lazım",
+        # "ne almalıyım") from genuinely unknown specific items
+        # ("uzay mekiği", "zihin okuma cihazı").  The first family
+        # should get a clarification prompt; the second should keep the
+        # no-result wording.
+        if _is_vague_query(original_query):
+            update_session(
+                session,
+                user_query=original_query,
+                normalized_query=search_query,
+                parsed_query=parsed_query,
+                pending_clarification=True,
+            )
+
+            answer, rewriter_used = rewrite_response(
+                original_query=original_query,
+                normalized_query=search_query,
+                parsed_query=parsed_query,
+                products=[],
+                result_status="clarification_needed",
+                clarification_question=_VAGUE_CLARIFICATION_QUESTION,
+                response_plan=response_plan,
+            )
+
+            return {
+                "answer": answer,
+                "products": [],
+                "parsed_query": parsed_query,
+                "needs_clarification": True,
+                "follow_up_question": _VAGUE_CLARIFICATION_QUESTION,
+                **debug_info,
+                "response_mode": response_plan.mode,
+                "response_source": "ollama_vague_clarification" if rewriter_used else "template_vague_clarification",
+            }
+
         update_session(
             session,
             user_query=original_query,
@@ -213,6 +397,7 @@ def search_products(req: QueryRequest):
             parsed_query=parsed_query,
             products=[],
             result_status="no_result",
+            response_plan=response_plan,
         )
 
         return {
@@ -222,38 +407,55 @@ def search_products(req: QueryRequest):
             "needs_clarification": False,
             "follow_up_question": None,
             **debug_info,
+            "response_mode": response_plan.mode,
             "response_source": "ollama_no_result" if rewriter_used else "template_no_result",
         }
 
     if clarification["needs_clarification"]:
-        update_session(
-            session,
-            user_query=original_query,
-            normalized_query=search_query,
-            parsed_query=parsed_query,
-            pending_clarification=True,
-        )
+        # Override clarification for modes where the user specified enough
+        # information to show products:
+        # - broad_search: main_category set → show diverse products + follow-up
+        # - focused_search: sub_category or product_type set → show products
+        should_override = response_plan.mode in (MODE_BROAD_SEARCH, MODE_FOCUSED_SEARCH)
 
-        answer, rewriter_used = rewrite_response(
-            original_query=original_query,
-            normalized_query=search_query,
-            parsed_query=parsed_query,
-            products=[],
-            result_status="clarification_needed",
-            clarification_question=clarification["follow_up_question"],
-        )
+        if should_override:
+            logger.info(
+                "Clarification override (%s): skipping clarification, "
+                "user specified enough context to show products.",
+                response_plan.mode,
+            )
+            # Fall through to search below
+        else:
+            update_session(
+                session,
+                user_query=original_query,
+                normalized_query=search_query,
+                parsed_query=parsed_query,
+                pending_clarification=True,
+            )
 
-        return {
-            "answer": answer,
-            "products": [],
-            "parsed_query": parsed_query,
-            "needs_clarification": True,
-            "follow_up_question": clarification["follow_up_question"],
-            **debug_info,
-            "response_source": "ollama_clarification" if rewriter_used else "template_clarification",
-        }
+            answer, rewriter_used = rewrite_response(
+                original_query=original_query,
+                normalized_query=search_query,
+                parsed_query=parsed_query,
+                products=[],
+                result_status="clarification_needed",
+                clarification_question=clarification["follow_up_question"],
+                response_plan=response_plan,
+            )
 
-    # ---- 6. Existing filtering + search (UNCHANGED) ----
+            return {
+                "answer": answer,
+                "products": [],
+                "parsed_query": parsed_query,
+                "needs_clarification": True,
+                "follow_up_question": clarification["follow_up_question"],
+                **debug_info,
+                "response_mode": response_plan.mode,
+                "response_source": "ollama_clarification" if rewriter_used else "template_clarification",
+            }
+
+    # ---- 7. Filtering + search ----
     filtered_df = apply_filters(df, parsed_query)
 
     has_filter = any([
@@ -282,6 +484,7 @@ def search_products(req: QueryRequest):
             parsed_query=parsed_query,
             products=[],
             result_status="no_result",
+            response_plan=response_plan,
         )
 
         return {
@@ -291,10 +494,17 @@ def search_products(req: QueryRequest):
             "needs_clarification": False,
             "follow_up_question": None,
             **debug_info,
+            "response_mode": response_plan.mode,
             "response_source": "ollama_empty" if rewriter_used else "template_empty",
         }
 
     candidate_df = filtered_df if not filtered_df.empty else df.copy()
+
+    # For broad_search, fetch more candidates so diversification has
+    # enough material to pick from across product types.
+    search_top_k = SEARCH_TOP_K
+    if response_plan.diversify_results:
+        search_top_k = max(SEARCH_TOP_K * 4, 20)
 
     result_df = semantic_search(
         search_query,
@@ -302,10 +512,23 @@ def search_products(req: QueryRequest):
         model,
         product_embeddings,
         parsed_query,
-        top_k=SEARCH_TOP_K,
+        top_k=search_top_k,
     )
 
-    # ---- 7. Build product list (same structure as before) ----
+    # ---- 8. Apply diversification for broad_search ----
+    if response_plan.diversify_results and not result_df.empty:
+        result_df = diversify_results(result_df, top_k=SEARCH_TOP_K)
+        # Capture actual top product_types for the rewriter
+        response_plan.top_product_types = (
+            result_df["product_type"].dropna().unique().tolist()
+        )
+        logger.info(
+            "Diversified results: %d products across types: %s",
+            len(result_df),
+            response_plan.top_product_types,
+        )
+
+    # ---- 9. Build product list (same structure as before) ----
     products = []
 
     for idx, row in result_df.iterrows():
@@ -327,22 +550,32 @@ def search_products(req: QueryRequest):
             ],
         })
 
-    # ---- 8. Ollama response rewrite (with fallback) ----
+    # ---- 10. Ollama response rewrite (with response plan) ----
+    # For broad_search, the result_status includes the follow-up behavior
+    result_status = "products_found"
+    followup_question = None
+
+    if response_plan.should_ask_followup and products:
+        result_status = "products_found_with_followup"
+        followup_question = response_plan.followup_question
+
     answer, rewriter_used = rewrite_response(
         original_query=original_query,
         normalized_query=search_query,
         parsed_query=parsed_query,
         products=products,
-        result_status="products_found",
+        result_status=result_status,
+        clarification_question=followup_question,
+        response_plan=response_plan,
     )
 
-    # ---- 9. Update session ----
+    # ---- 11. Update session ----
     update_session(
         session,
         user_query=original_query,
         normalized_query=search_query,
         parsed_query=parsed_query,
-        pending_clarification=False,
+        pending_clarification=response_plan.should_ask_followup,
         constraints={
             "min_price": parsed_query.get("min_price"),
             "max_price": parsed_query.get("max_price"),
@@ -350,13 +583,14 @@ def search_products(req: QueryRequest):
         },
     )
 
-    # ---- 10. Return response (backward-compatible + debug) ----
+    # ---- 12. Return response (backward-compatible + debug) ----
     return {
         "answer": answer,
         "products": products,
         "parsed_query": parsed_query,
         "needs_clarification": False,
-        "follow_up_question": None,
+        "follow_up_question": followup_question,
         **debug_info,
+        "response_mode": response_plan.mode,
         "response_source": "ollama_rewrite" if rewriter_used else "template",
     }

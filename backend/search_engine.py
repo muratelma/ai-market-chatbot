@@ -259,6 +259,72 @@ def semantic_search(query, candidate_df, model, product_embeddings, parsed_query
     return result_df
 
 
+def diversify_results(result_df, top_k=5):
+    """
+    Rerank search results to maximize product_type diversity.
+
+    Uses a round-robin strategy: iterate through unique product_types
+    (ordered by their best score) and pick one product per type until
+    top_k is reached.  This ensures the user sees a representative
+    sample across product types for broad queries.
+
+    Parameters
+    ----------
+    result_df : pd.DataFrame
+        Scored search results (output of ``semantic_search``).
+        Must contain ``product_type`` and ``score`` columns.
+    top_k : int
+        Maximum number of results to return.
+
+    Returns
+    -------
+    pd.DataFrame
+        Reranked DataFrame with at most ``top_k`` rows.
+    """
+    if result_df.empty or len(result_df) <= 1:
+        return result_df
+
+    # Group by product_type, keeping original score order within each group
+    groups = {}
+    for idx, row in result_df.iterrows():
+        pt = str(row.get("product_type", "")).strip()
+        if pt not in groups:
+            groups[pt] = []
+        groups[pt].append(idx)
+
+    # Order groups by their best (first) product's score — highest first
+    sorted_types = sorted(
+        groups.keys(),
+        key=lambda pt: result_df.loc[groups[pt][0], "score"],
+        reverse=True,
+    )
+
+    # Round-robin pick
+    selected_indices = []
+    round_num = 0
+
+    while len(selected_indices) < top_k:
+        added_this_round = False
+
+        for pt in sorted_types:
+            if len(selected_indices) >= top_k:
+                break
+
+            items = groups[pt]
+            if round_num < len(items):
+                selected_indices.append(items[round_num])
+                added_this_round = True
+
+        if not added_this_round:
+            break
+
+        round_num += 1
+
+    diversified_df = result_df.loc[selected_indices].reset_index(drop=True)
+
+    return diversified_df
+
+
 def build_answer(parsed_query, product_count):
     if product_count == 0:
         has_hard_filter = (

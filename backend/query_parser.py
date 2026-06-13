@@ -322,6 +322,60 @@ def find_value_from_column(query, df, column_name):
         if value_text and contains_phrase(query, value_text):
             return value
 
+    # Prefix fallback for product_type: when the user writes a base word
+    # like "tencere" but the catalog has "Tencere Seti", match the base word
+    # as a prefix of the catalog value.  Only applied to product_type to avoid
+    # false positives on shorter category/sub-category names.
+    if column_name == "product_type":
+        q_lower = normalize_text_for_match(query)
+        q_words = q_lower.split()
+
+        # Collect main_category and sub_category words to exclude them —
+        # "kamp" is a category, not a product-type prefix.
+        category_words = set()
+        for col in ("main_category", "sub_category"):
+            for val in df[col].dropna().unique():
+                for w in normalize_text_for_match(str(val)).split():
+                    if len(w) >= 4:
+                        category_words.add(w)
+
+        # Remove intent/broad words that shouldn't be used as product prefixes
+        skip_words = {
+            "oner", "oener", "ariyorum", "istiyorum", "lazim",
+            "urun", "malzeme", "tavsiye", "oneri", "icin",
+            "bir", "sey", "esya",
+            # Common Turkish adjectives/verbs that happen to be the first
+            # word of a product_type ("Kuru Şampuan", "Okuma Lambası").
+            # Without this guard they cause false positives like
+            # "kuru cilt için ürün öner" → Kuru Şampuan, or
+            # "zihin okuma cihazı" → Okuma Lambası.  Exact-phrase matches
+            # for those PTs still work via contains_phrase above.
+            "kuru", "okuma",
+        }
+
+        for value in values:
+            value_norm = normalize_text_for_match(str(value))
+            if not value_norm:
+                continue
+
+            value_words = value_norm.split()
+            if len(value_words) < 2:
+                # Only prefix-match multi-word product types
+                # (single-word types should be caught by exact match above)
+                continue
+
+            value_first_word = value_words[0]
+            if len(value_first_word) < 4:
+                continue
+
+            for q_word in q_words:
+                if q_word in skip_words:
+                    continue
+                if q_word in category_words:
+                    continue
+                if q_word == value_first_word:
+                    return value
+
     return None
 
 
@@ -500,7 +554,51 @@ def semantic_taxonomy_match(query, model, taxonomy_embeddings, taxonomy_records,
     return matched_item
 
 
-def parse_query(query, df, model, taxonomy_embeddings, taxonomy_records, taxonomy_match_threshold=DEFAULT_TAXONOMY_MATCH_THRESHOLD):
+# Words that signal a broad product-recommendation intent in the user's
+# *original* query.  We check the original (not the Ollama-normalized) form
+# because the normalizer can expand a brief "ürün öner" into a richer
+# phrase like "saç bakım ürünü" — and "bakım" alone happens to match the
+# "Bakım" sub_category (Anne & Bebek / Otomotiv), which silently flips a
+# broad request into a focused one.
+_BROAD_INTENT_PATTERN = re.compile(
+    r"\b(ürün|urun|malzeme|eşya|esya|şey|sey|"
+    r"ne kullanabilirim|ne kullanmalıyım|ne kullanmaliyim|"
+    r"bakım ürünü|bakim urunu)\w*\b"
+)
+
+# Product-type terms that, if the user types them explicitly, signal a
+# focused intent — they block the broad strip even when broad-intent words
+# are also present (e.g. "saç dökülmesi için şampuan öner").
+_EXPLICIT_PRODUCT_TYPE_TERMS = (
+    "şampuan", "sampuan",
+    "saç kremi", "sac kremi",
+    "saç serumu", "sac serumu",
+    "saç losyonu", "sac losyonu",
+    "saç toniği", "sac tonigi", "saç tonik", "sac tonik",
+    "saç maskesi", "sac maskesi",
+    "saç yağı", "sac yagi",
+    "serum", "losyon", "tonik",
+)
+
+
+def _query_has_broad_intent(query):
+    if not query:
+        return False
+    q_lower = query.lower().replace("ı", "i")
+    return bool(_BROAD_INTENT_PATTERN.search(q_lower))
+
+
+def _query_has_explicit_product_type_term(query):
+    if not query:
+        return False
+    q_lower = query.lower()
+    for term in _EXPLICIT_PRODUCT_TYPE_TERMS:
+        if re.search(rf"\b{re.escape(term)}\b", q_lower):
+            return True
+    return False
+
+
+def parse_query(query, df, model, taxonomy_embeddings, taxonomy_records, taxonomy_match_threshold=DEFAULT_TAXONOMY_MATCH_THRESHOLD, original_query=None):
     min_price, max_price = extract_price_range(query)
 
     explicit_main_category = extract_explicit_main_category(query, df)
@@ -599,6 +697,37 @@ def parse_query(query, df, model, taxonomy_embeddings, taxonomy_records, taxonom
             parsed[field] = value
 
     parsed = normalize_category_consistency(parsed, df, query)
+
+    # Broad query check: if the user used truly-broad words ("ürün", "malzeme",
+    # "eşya", "şey", "ne kullanabilirim") AND didn't explicitly name a product
+    # type (e.g. "şampuan", "saç kremi", "serum"), remove the taxonomy-inferred
+    # product_type to keep the search broad.
+    #
+    # We check the *original* user query (not the Ollama-normalized one) for
+    # both signals.  The normalizer often expands a brief "ürün öner" into a
+    # richer phrase like "saç bakım ürünü" — and "bakım" alone happens to
+    # match the "Bakım" sub_category (Anne & Bebek / Otomotiv).  Reading the
+    # normalized query for the broad/explicit decision lets that expansion
+    # silently flip a broad request ("saç dökülmesi için ürün öner") into a
+    # focused 5/5-Şampuan result.
+    if explicit_product_type is None and parsed.get("product_type") is not None:
+        intent_query = original_query if original_query else query
+
+        if (
+            _query_has_broad_intent(intent_query)
+            and not _query_has_explicit_product_type_term(intent_query)
+        ):
+            # Local import to avoid load-order coupling; both modules
+            # are already imported together by main.py.
+            from response_planner import extract_user_problem
+            user_problem = extract_user_problem(intent_query)
+            parsed["product_type"] = None
+            # Keep the inferred sub_category when the user named a
+            # specific problem (e.g. "saç dökülmesi") so results stay
+            # constrained to the relevant care area instead of broadening
+            # to the entire main_category.
+            if explicit_sub_category is None and user_problem is None:
+                parsed["sub_category"] = None
 
     return parsed
 
