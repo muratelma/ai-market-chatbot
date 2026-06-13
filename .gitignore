@@ -32,3 +32,6 @@ backend/products_prepared.csvscratch/
 backend/scratch/
 backend/report.json
 frontend/vite.config.js.bak
+
+# Local eval result snapshots
+backend/eval/results/
