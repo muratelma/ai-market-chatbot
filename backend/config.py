@@ -67,6 +67,20 @@ TAXONOMY_CSV_PATH = _resolve_data_path("AI_MARKET_TAXONOMY_CSV", "taxonomy.csv")
 SEARCH_TOP_K = _get_env_int("AI_MARKET_TOP_K", 5, minimum=1)
 TAXONOMY_MATCH_THRESHOLD = _get_env_float("AI_MARKET_TAXONOMY_MATCH_THRESHOLD", 0.65)
 
+# ---- Product catalog source ----
+# PRODUCT_SOURCE selects where the catalog is loaded from once at startup:
+#   "csv" (default) -> backend/products.csv  (unchanged legacy behavior)
+#   "db"            -> PostgreSQL via DATABASE_URL, loaded with ORDER BY id
+# CSV stays the safe fallback: if DB loading fails, data_loader falls back to CSV.
+# DATABASE_URL is a libpq connection URI accepted directly by psycopg2.connect.
+# PRODUCTS_TABLE lets the table name be overridden without code changes.
+PRODUCT_SOURCE = _get_env_str("PRODUCT_SOURCE", "csv").lower()
+DATABASE_URL = _get_env_str(
+    "DATABASE_URL",
+    "postgresql://aimarket_user:aimarket_pass@localhost:5433/aimarket",
+)
+PRODUCTS_TABLE = _get_env_str("PRODUCTS_TABLE", "products")
+
 # ---- Ollama configuration ----
 OLLAMA_BASE_URL = _get_env_str("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = _get_env_str("OLLAMA_MODEL", "gemma3:4b")

@@ -55,9 +55,9 @@ migration preserves that shape (DB → load all rows into the same df at boot,
 
 ## 4. Post-DB checklist
 
-* [ ] Move catalog source from CSV to DB while preserving DataFrame shape
-* [ ] Load products with stable ORDER BY id
-* [ ] Rebuild embeddings from the exact DB-loaded product order
+* [x] Move catalog source from CSV to DB while preserving DataFrame shape
+* [x] Load products with stable ORDER BY id
+* [x] Rebuild embeddings from the exact DB-loaded product order
 * [ ] Consider product_id-keyed embeddings later
 * [ ] Re-test Ollama model alternatives after DB baseline
 * [ ] Consider product_type consolidation after DB migration
@@ -118,3 +118,69 @@ be rebuilt from that exact order.** Capture the test/eval numbers above as the
 pre-migration baseline; after migration, re-run all three suites and pay special
 attention to the cross-category-ambiguous queries (`tencere seti`, `sırt çantası`,
 `uyku tulumu`, `termos bardak`) to confirm ordering was preserved.
+
+---
+
+## 8. PostgreSQL DB migration baseline — COMPLETED ✅
+
+_Completed: 2026-06-14_
+
+The PostgreSQL catalog migration baseline is **done**. CSV remains the default
+and is intentionally **not** removed from this branch.
+
+**Infrastructure**
+
+- PostgreSQL 16 and pgAdmin run via Docker (`docker-compose.yml`). PostgreSQL is
+  reachable from the host at
+  `postgresql://aimarket_user:aimarket_pass@localhost:5433/aimarket`; pgAdmin
+  reaches it inside the Docker network at host `postgres`, port `5432`.
+- Products were seeded into PostgreSQL successfully via
+  `backend/scripts/seed_products_postgres.py` — 1000 rows, `id` assigned in CSV
+  order (1..1000), re-runnable (TRUNCATE + reload).
+
+**What changed (source)**
+
+- `backend/database.py` (new): `load_products_from_db()` selects the original CSV
+  columns `ORDER BY id` so the DataFrame matches CSV mode column-for-column.
+- `backend/config.py`: `PRODUCT_SOURCE` (`csv` default / `db`), `DATABASE_URL`,
+  `PRODUCTS_TABLE`.
+- `backend/data_loader.py`: `load_products(source=...)` dispatches CSV/DB through a
+  shared `_finalize_products` step (price coerce, dropna, `reset_index`) so both
+  modes yield an identical shape and 0..N-1 positional index. Embeddings are
+  rebuilt at startup from this exact DB-loaded order (ORDER CONTRACT preserved).
+- `backend/.env.example`, `backend/requirements.txt` (`psycopg2-binary`).
+
+**Verification**
+
+- **Eval parity:** CSV mode and DB mode produced **identical** eval results —
+  unit tests (30 passed), gold eval (Top-1 0.974 / Top-3 1.000), stress eval
+  (Top-1 0.963 / Top-3 1.000) in both modes. A direct DataFrame comparison showed
+  0 differing values (only `price` dtype differs: CSV `int64` vs DB `float64`,
+  functionally inert).
+- **Real API comparison:** performed through the actual local FastAPI endpoint
+  `POST /search` (the same path the frontend/chatbot uses), 12 queries × 3 runs
+  per mode, Ollama active. DB mode was confirmed to load genuinely from
+  PostgreSQL (`Ürünler PostgreSQL'den yüklendi (1000 satır).`), not via fallback.
+- **Result:** when `normalized_query` was the same, CSV and DB produced
+  **identical** results (12/12 shared normalized queries → byte-identical output).
+- The only remaining user-visible differences are caused by **Ollama
+  non-determinism** (the normalizer returns different `normalized_query` values
+  across repeated runs, even within a single mode) — **not** the DB migration.
+
+**Fail-loud behavior**
+
+- Explicit DB mode (`PRODUCT_SOURCE=db`) now **fails loudly**: if PostgreSQL
+  loading fails (bad `DATABASE_URL`, auth error, missing table, missing driver),
+  `load_products` raises a `RuntimeError` (chaining the original error) and
+  startup stops. It no longer silently falls back to CSV, which previously could
+  hide DB misconfiguration. CSV is used only when it is the selected source.
+- An automated test (`backend/tests/test_data_loader_db.py`) covers this: it
+  mocks the DB loader to fail and asserts `load_products(source="db")` raises and
+  never calls the CSV reader. No real PostgreSQL is required for the test.
+
+**Deferred (unchanged from §4)**
+
+- Removing CSV as a product source is the next experiment (branch
+  `remove-csv-product-source`); CSV stays in place for now.
+- Normalizer output constraint, product_type consolidation, and threshold
+  re-tuning remain open.
