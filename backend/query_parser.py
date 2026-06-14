@@ -211,6 +211,31 @@ QUERY_ALIASES = [
             "product_type": "Klavye Mouse Set",
         },
     },
+    # Skin serum: the embedding model maps "cilt serum"/"yüz serum" to
+    # Cilt Bakımı only weakly (~0.44, below the 0.65 taxonomy threshold), and
+    # the Ollama normalizer sometimes hallucinates "cilt" → "saç" — so a skin
+    # serum request silently drifts to Saç Serumu.  Pin it deterministically.
+    {
+        "keywords": ["cilt için serum", "cilt serum", "cilt serumu",
+                     "yüz için serum", "yüz serum", "yüz serumu",
+                     "cilt bakım serumu", "yüz bakım serumu"],
+        "fields": {
+            "main_category": "Kişisel Bakım",
+            "sub_category": "Cilt Bakımı",
+            "product_type": "Cilt Serumu",
+        },
+    },
+    # Hair serum: symmetric pin so "saç (için) serum" always resolves to the
+    # hair product_type rather than a generic Saç Bakımı sub-category.
+    {
+        "keywords": ["saç için serum", "saç serum", "saç serumu",
+                     "saç bakım serumu"],
+        "fields": {
+            "main_category": "Kişisel Bakım",
+            "sub_category": "Saç Bakımı",
+            "product_type": "Saç Serumu",
+        },
+    },
 ]
 
 def normalize_text_for_match(text):
@@ -816,7 +841,7 @@ def is_query_too_general(query, parsed_query, df):
     if has_main_category and not has_sub_category and not has_product_type:
         return True
 
-    # Sub-category is a fairly specific signal. On a 750-product catalog
+    # Sub-category is a fairly specific signal. On the current catalog
     # having 2-5 products per sub-category is normal; only ask for
     # clarification when there are enough variants to make choice meaningful.
     if has_sub_category and not has_product_type:
@@ -825,7 +850,7 @@ def is_query_too_general(query, parsed_query, df):
     # Product type is already a strong, specific signal. Only ask for
     # clarification when there are many variants of the same type and
     # no other discriminating context (price, features, target group) is given.
-    # Threshold tuned for a 750-product catalog where 5-10 items per type is normal.
+    # Threshold tuned for the current catalog where 5-10 items per type is normal.
     if has_product_type:
         return matching_product_count > 20
 
@@ -847,6 +872,25 @@ CATEGORY_FOLLOW_UP_QUESTIONS = {
     "Spor": "Spor ürününü hangi amaçla arıyorsun? Fitness, koşu, yoga, outdoor veya günlük egzersiz gibi bir kullanım amacı belirtebilirsin.",
 }
 
+def _most_common_category(series):
+    """Return the most frequent value in ``series`` with a deterministic,
+    row-order-independent tie-break (alphabetical).
+
+    Several product_types/sub_categories span more than one main_category
+    in the catalog (e.g. "Tencere Seti" → {Kamp, Mutfak}).  When counts tie,
+    we must pick the same value regardless of DataFrame row order, otherwise
+    a DB migration that returns rows in a different order could silently
+    change parse results.  ``Series.mode()`` already sorts ascending, but we
+    make the guarantee explicit here rather than rely on that behaviour.
+    """
+    counts = series.dropna().value_counts()
+    if counts.empty:
+        return None
+    top_count = counts.max()
+    tied = sorted(str(value) for value, count in counts.items() if count == top_count)
+    return tied[0]
+
+
 def infer_main_category_from_parsed(parsed_query, df):
     if parsed_query.get("main_category") is not None:
         return parsed_query["main_category"]
@@ -860,7 +904,7 @@ def infer_main_category_from_parsed(parsed_query, df):
         ]
 
         if not matched_rows.empty:
-            return matched_rows["main_category"].mode().iloc[0]
+            return _most_common_category(matched_rows["main_category"])
 
     if product_type is not None:
         matched_rows = df[
@@ -868,7 +912,7 @@ def infer_main_category_from_parsed(parsed_query, df):
         ]
 
         if not matched_rows.empty:
-            return matched_rows["main_category"].mode().iloc[0]
+            return _most_common_category(matched_rows["main_category"])
 
     return None
 
@@ -944,7 +988,7 @@ def normalize_category_consistency(parsed_query, df, query):
         ]
 
         if not matched_rows.empty:
-            correct_main_category = matched_rows["main_category"].mode().iloc[0]
+            correct_main_category = _most_common_category(matched_rows["main_category"])
             parsed_query["main_category"] = correct_main_category
 
             unique_sub_categories = matched_rows["sub_category"].dropna().unique().tolist()

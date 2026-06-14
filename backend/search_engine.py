@@ -61,7 +61,7 @@ def row_contains_any_feature(row, features):
 
     return any(str(feature).lower() in combined_text for feature in features)
 
-def apply_filters(df, parsed_query):
+def apply_filters(df, parsed_query, enforce_explicit_category=False):
     filtered = df.copy()
 
     # 1. Price is the ONLY absolute strict filter
@@ -88,6 +88,10 @@ def apply_filters(df, parsed_query):
             if not temp.empty:
                 filtered = temp
 
+    # Pool after category (target_group/main/sub) narrowing but before the
+    # looser product_type match.
+    category_pool = filtered.copy()
+
     product_type = parsed_query.get("product_type")
     if product_type is not None:
         value_lower = str(product_type).lower()
@@ -104,7 +108,19 @@ def apply_filters(df, parsed_query):
     # If strict filters produce a strong candidate pool, use it
     if len(filtered) >= 10:
         return filtered
-        
+
+    # When the caller asks us to enforce an explicitly named category (e.g. the
+    # query carried a seasonal modifier like "kışlık"/"yazlık" that otherwise
+    # lets the broad pool drift to a sibling category — "kışlık elbise" → Mont),
+    # stay within the named category instead of diluting with the whole catalog.
+    # Prefer the (small) product_type pool when it exists, else the sub/main
+    # category pool — but never widen back to the full catalog.
+    if enforce_explicit_category:
+        if not filtered.empty:
+            return filtered
+        if not category_pool.empty:
+            return category_pool
+
     # Otherwise, if strict filters produce empty or very small/weak candidates,
     # fall back to the broader candidate pool and let hybrid scoring decide
     return base_pool
@@ -123,6 +139,11 @@ def semantic_search(query, candidate_df, model, product_embeddings, parsed_query
     query_vector = np.array(query_vector).astype("float32")
     faiss.normalize_L2(query_vector)
 
+    # EMBEDDING ORDER CONTRACT: product_embeddings is a positional array aligned
+    # to the original df row order, so candidate_df.index values are valid row
+    # positions into it. This holds only because apply_filters preserves the
+    # original index (no reset_index) and the df is never reordered after the
+    # embeddings are built. See data_loader.load_products / main.py.
     candidate_indices = candidate_df.index.to_numpy()
     candidate_embeddings = product_embeddings[candidate_indices]
 

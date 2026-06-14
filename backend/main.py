@@ -52,6 +52,15 @@ class QueryRequest(BaseModel):
     session_id: Optional[str] = None
 
 
+# Seasonal modifier words. When one of these appears alongside an explicit
+# product category, the explicit category must win (see step 7): the seasonal
+# word is only a preference, not a category switch.
+_SEASONAL_WORDS: frozenset[str] = frozenset({
+    "kışlık", "kislik", "yazlık", "yazlik", "mevsimlik",
+    "ilkbahar", "sonbahar", "kışlığı", "yazlığı",
+})
+
+
 # Tokens that, taken alone, signal a vague request ("ürün öner",
 # "bir şey lazım", "ne almalıyım") rather than a specific missing item
 # ("uzay mekiği", "zihin okuma cihazı").  When no parser signal fires
@@ -97,6 +106,11 @@ print("Ürün metinleri hazırlanıyor...")
 search_texts = create_search_text(df)
 
 print("Ürün embeddingleri oluşturuluyor...")
+# EMBEDDING ORDER CONTRACT: product_embeddings[i] corresponds to df row i.
+# This positional alignment is relied on by search_engine.semantic_search
+# (it indexes product_embeddings by df.index). Never reorder/filter `df`
+# in place after this point, and after DB migration rebuild embeddings from
+# the exact DB-loaded product order (ORDER BY id). See data_loader.load_products.
 product_embeddings = model.encode(search_texts)
 product_embeddings = np.array(product_embeddings).astype("float32")
 faiss.normalize_L2(product_embeddings)
@@ -251,16 +265,28 @@ def search_products(req: QueryRequest):
 
     # ---- 4b. Fall back to the original query when normalization broke parsing ----
     # Ollama normalization is non-deterministic and can corrupt a perfectly
-    # parseable phrase in two ways:
+    # parseable phrase in several ways:
     #   (a) inflect it past the parser, e.g. "özel gün için kadın elbise öner"
-    #       → "kadın elbiseleri", which yields NO category signal; or
-    #   (b) hallucinate an unrelated category, e.g. "elbise tavsiye et" →
-    #       "baharatlık", which parses to a *different* (wrong) category.
-    # The user's literal words are authoritative for category identity, so when
-    # the original query parses to a category that the normalized query either
-    # lost or contradicts, re-parse and search on the original instead.
+    #       → "kadın elbiseleri", which yields NO category signal;
+    #   (b) hallucinate an unrelated main category, e.g. "elbise tavsiye et" →
+    #       "baharatlık" (Mutfak instead of Giyim); or
+    #   (c) flip the sub-category / product_type while keeping the main category,
+    #       e.g. "cilt serumu öner" → "saç serumu" (Cilt Serumu → Saç Serumu) or
+    #       "kışlık elbise öner" → "kışlık kadın elbiseleri" (Elbise → Mont).
+    # The user's literal words are authoritative for category identity. When the
+    # original query parses to a category signal that the normalized query lost
+    # or contradicts at ANY level (main/sub/product_type), re-parse and search
+    # on the original instead.  Explicit product/category terms must outrank the
+    # seasonal/context words ("kışlık", "yazlık", ...) the normalizer leans on.
     def _has_category_signal(pq: dict) -> bool:
         return any([pq.get("main_category"), pq.get("sub_category"), pq.get("product_type")])
+
+    def _contradicts(field: str, original_pq: dict, normalized_pq: dict) -> bool:
+        # Only a contradiction when BOTH sides committed to a value and they
+        # differ — this lets normalization legitimately *add* specificity
+        # (e.g. original sub=Saç Bakımı, normalized adds product_type=Şampuan).
+        ov, nv = original_pq.get(field), normalized_pq.get(field)
+        return bool(ov and nv and ov != nv)
 
     if effective_query.strip() and effective_query != search_query:
         original_parsed = parse_query(
@@ -274,9 +300,9 @@ def search_products(req: QueryRequest):
         )
         if _has_category_signal(original_parsed):
             normalization_lost_category = not _has_category_signal(parsed_query)
-            normalization_changed_category = bool(
-                original_parsed.get("main_category")
-                and original_parsed.get("main_category") != parsed_query.get("main_category")
+            normalization_changed_category = any(
+                _contradicts(field, original_parsed, parsed_query)
+                for field in ("main_category", "sub_category", "product_type")
             )
             if normalization_lost_category or normalization_changed_category:
                 logger.info(
@@ -456,7 +482,20 @@ def search_products(req: QueryRequest):
             }
 
     # ---- 7. Filtering + search ----
-    filtered_df = apply_filters(df, parsed_query)
+    # Seasonal modifiers ("kışlık", "yazlık", ...) embed close to outerwear
+    # (Mont/Kaban/Bot), so on a small explicit-category pool the broad fallback
+    # can drift to a sibling category (e.g. "kışlık elbise" → Mont). When such a
+    # modifier appears AND the user named an explicit sub_category/product_type,
+    # enforce that category so the explicit term outranks the seasonal one.
+    # Restricted to a closed seasonal-word set so ordinary context queries
+    # (e.g. "koşu için ayakkabı") keep their whole-catalog rescue.
+    _query_tokens = set(re.findall(r"\w+", f"{search_query} {effective_query}".lower()))
+    has_explicit_category = (
+        parsed_query.get("sub_category") is not None
+        or parsed_query.get("product_type") is not None
+    )
+    enforce_category = has_explicit_category and bool(_query_tokens & _SEASONAL_WORDS)
+    filtered_df = apply_filters(df, parsed_query, enforce_explicit_category=enforce_category)
 
     has_filter = any([
         parsed_query["min_price"] is not None,
