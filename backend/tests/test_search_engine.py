@@ -1,0 +1,64 @@
+"""Deterministic tests for search_engine.apply_filters.
+
+Covers the price strict-filter and the enforce_explicit_category branch — the
+deterministic core of the "seasonal modifier + explicit category" behavior
+(e.g. "kışlık elbise" must stay within Elbise instead of drifting to a sibling
+category). No embeddings/model/DB involved.
+"""
+import pandas as pd
+
+from search_engine import apply_filters
+
+
+def _catalog():
+    # 12 Giyim rows: 3 Elbise + 9 Mont. Small enough that category narrowing
+    # yields < 10 rows, which is what triggers the enforce_explicit_category path.
+    rows = []
+    for i in range(3):
+        rows.append(("Elbise %d" % i, "Giyim", "Elbise", "Kadın", "Abiye", 500 + i))
+    for i in range(9):
+        rows.append(("Mont %d" % i, "Giyim", "Dış Giyim", "Kadın", "Mont", 800 + i))
+    return pd.DataFrame(
+        rows,
+        columns=["product_name", "main_category", "sub_category", "target_group",
+                 "product_type", "price"],
+    )
+
+
+def _parsed(**overrides):
+    base = {
+        "min_price": None,
+        "max_price": None,
+        "target_group": None,
+        "main_category": None,
+        "sub_category": None,
+        "product_type": None,
+    }
+    base.update(overrides)
+    return base
+
+
+def test_price_is_strict_filter():
+    df = _catalog()
+    out = apply_filters(df, _parsed(max_price=501))
+    assert len(out) == 2  # Elbise 0 (500) and Elbise 1 (501); 502 excluded
+    assert set(out["product_name"]) == {"Elbise 0", "Elbise 1"}
+
+
+def test_enforce_explicit_category_keeps_named_subcategory():
+    df = _catalog()
+    parsed = _parsed(main_category="Giyim", sub_category="Elbise")
+
+    enforced = apply_filters(df, parsed, enforce_explicit_category=True)
+    assert len(enforced) == 3
+    assert set(enforced["sub_category"]) == {"Elbise"}
+
+
+def test_without_enforce_falls_back_to_broader_pool():
+    df = _catalog()
+    parsed = _parsed(main_category="Giyim", sub_category="Elbise")
+
+    # Narrowed pool is < 10, and without enforcement apply_filters widens back
+    # to the broader (price-filtered) base pool rather than the 3 Elbise rows.
+    default = apply_filters(df, parsed, enforce_explicit_category=False)
+    assert len(default) == len(df)

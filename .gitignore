@@ -1,5 +1,6 @@
 # Python
 __pycache__/
+.pytest_cache/
 *.pyc
 *.pyo
 *.pyd
@@ -27,11 +28,18 @@ Thumbs.db
 
 # Large / raw datasets
 backend/raw_products.csv
-backend/products_prepared.csvscratch/
+backend/products_prepared.csv
 .cursor/
+scratch/
 backend/scratch/
 backend/report.json
 frontend/vite.config.js.bak
 
+# Manual scripts caches
+backend/manual/__pycache__/
+
+# WIP backup/patch artifacts
+WIP_*
+
 # Local eval result snapshots
-backend/eval/results/
+backend/eval/results/*.json
