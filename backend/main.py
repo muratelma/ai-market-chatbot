@@ -11,7 +11,6 @@ from sentence_transformers import SentenceTransformer
 
 from config import (
     MODEL_NAME_OR_PATH,
-    PRODUCTS_CSV_PATH,
     SEARCH_TOP_K,
     TAXONOMY_CSV_PATH,
     TAXONOMY_MATCH_THRESHOLD,
@@ -99,8 +98,8 @@ def _is_vague_query(query: str) -> bool:
 print("Model yükleniyor...")
 model = SentenceTransformer(MODEL_NAME_OR_PATH)
 
-print("CSV okunuyor...")
-df = load_products(PRODUCTS_CSV_PATH)
+print("Ürünler PostgreSQL'den yükleniyor...")
+df = load_products()
 
 print("Ürün metinleri hazırlanıyor...")
 search_texts = create_search_text(df)

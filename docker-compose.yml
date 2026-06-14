@@ -11,6 +11,11 @@ services:
       - "5433:5432"
     volumes:
       - aimarket_postgres_data:/var/lib/postgresql/data
+      # Auto-seed the catalog ONLY on a fresh/empty volume: scripts in
+      # /docker-entrypoint-initdb.d run only during first-time DB init.
+      # Existing volumes are untouched — reseed manually with
+      # backend/scripts/seed_products_postgres.py (or psql -f).
+      - ./backend/db/seed_products.sql:/docker-entrypoint-initdb.d/seed_products.sql:ro
 
   pgadmin:
     image: dpage/pgadmin4

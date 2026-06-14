@@ -184,3 +184,71 @@ and is intentionally **not** removed from this branch.
   `remove-csv-product-source`); CSV stays in place for now.
 - Normalizer output constraint, product_type consolidation, and threshold
   re-tuning remain open.
+
+---
+
+## 9. CSV product source removal — COMPLETED ✅
+
+_Completed: 2026-06-14 (branch `remove-csv-product-source`)_
+
+**PostgreSQL is now the only runtime product source.** `backend/products.csv`
+is removed; there is no `PRODUCT_SOURCE` switch and no CSV fallback.
+
+**Runtime model**
+
+- `load_products()` loads only from PostgreSQL (`ORDER BY id`) and returns the
+  same DataFrame shape the search pipeline expects. `DATABASE_URL` is required:
+  if it is missing or the DB read fails, `load_products()` raises `RuntimeError`
+  and startup stops (no silent fallback). Search scoring, chatbot behavior, and
+  the frontend are unchanged.
+
+**Source of truth for DB setup**
+
+- `backend/db/seed_products.sql` is now the canonical catalog artifact
+  (generated from PostgreSQL with `pg_dump --column-inserts --clean --if-exists`;
+  psql-only meta-commands and the `search_path` reset stripped so it is pure SQL
+  runnable by both psql and psycopg2). It contains `DROP TABLE IF EXISTS`,
+  `CREATE TABLE`, the `PRIMARY KEY`, and 1000 column-based INSERTs with explicit
+  ids 1..1000 (preserving the embedding/order contract). It fully recreates the
+  table from zero.
+
+**Docker volume persistence (why a committed SQL seed is required)**
+
+- The named volume `aimarket_postgres_data` holds the data and is **not** in Git.
+- `docker compose down` (and restarts) **keeps** the data.
+- `docker compose down -v` **deletes** the volume → catalog is gone.
+- Therefore reproducibility depends on the committed `seed_products.sql`:
+  `docker-compose.yml` mounts it into `/docker-entrypoint-initdb.d/`, which
+  **auto-runs only on a fresh/empty volume** (first-time init). Existing volumes
+  are untouched and must be reseeded manually.
+
+**How to set up / reseed**
+
+- Fresh machine / fresh volume: `docker compose up -d` → catalog auto-seeds.
+- Reseed an existing DB (DESTRUCTIVE — drops & recreates `products`):
+  `cd backend && python scripts/seed_products_postgres.py`
+  (or `psql "$DATABASE_URL" -f backend/db/seed_products.sql`).
+- Regenerate the seed after catalog edits:
+  `docker exec aimarket-postgres pg_dump -U aimarket_user -d aimarket
+  --table=products --no-owner --no-privileges --column-inserts --clean
+  --if-exists` (then strip the `\restrict`/`\unrestrict` and `search_path` lines).
+
+**Tests**
+
+- Parser unit tests use a small committed fixture
+  (`backend/tests/fixtures/products_sample.csv`, 155 rows) instead of the runtime
+  catalog, so tests need neither `products.csv` nor a live DB.
+- `test_data_loader_db.py` asserts the DB-only `load_products()` raises on DB
+  failure and on missing `DATABASE_URL`.
+
+**Verification (this round)**
+
+- `pytest`: 32 passed (after CSV deletion). Gold eval Top-1 0.974 / Top-3 1.000,
+  stress eval Top-1 0.963 / Top-3 1.000 — identical to baseline.
+- Real `POST /search` sanity (DB-only backend, 12 queries): behavior matches the
+  DB-migration baseline; the only differences are Ollama normalization
+  non-determinism (corrected by the original-query fallback, products still
+  correct). No CSV file is referenced anywhere at runtime.
+- Fresh-volume auto-seed verified in an isolated throwaway container: the init
+  script ran `seed_products.sql` and produced 1000 rows (ids 1..1000) from zero,
+  without touching the existing volume.

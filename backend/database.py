@@ -1,9 +1,9 @@
 """PostgreSQL access for the product catalog.
 
-This module is intentionally small: the rest of the system still loads the
-ENTIRE catalog once at startup into an in-memory pandas DataFrame and never
-does per-request SQL. The only job here is to hand ``data_loader`` a DataFrame
-that is shape-for-shape identical to the one produced from ``products.csv``.
+This module is intentionally small: the rest of the system loads the ENTIRE
+catalog once at startup into an in-memory pandas DataFrame and never does
+per-request SQL. The only job here is to hand ``data_loader`` a DataFrame with
+the columns and stable row order the search pipeline expects.
 
 -------------------------------------------------------------------------------
 DB / DataFrame / embedding ORDER CONTRACT  (read before changing anything)

@@ -1,29 +1,28 @@
-"""Seed the PostgreSQL ``products`` table from backend/products.csv.
+"""Seed / reseed the PostgreSQL ``products`` table from the SQL seed file.
 
 Run from the backend directory:
 
     python scripts/seed_products_postgres.py
 
 Connection comes from the DATABASE_URL env var (falls back to the local
-docker-compose default in config.py). The script is safely re-runnable: it
-TRUNCATEs and reloads the table on every run inside a single transaction.
+docker-compose default in config.py).
 
--------------------------------------------------------------------------------
-ORDER CONTRACT (must match data_loader / database / main)
--------------------------------------------------------------------------------
-Rows are inserted in CSV order and assigned a stable integer ``id`` = CSV row
-position (1..N). The app later loads ``SELECT ... ORDER BY id``, which exactly
-reproduces CSV order, so the embeddings stay aligned to the DataFrame rows.
-The id is assigned explicitly here (not via SERIAL) so the order does not
-depend on insertion timing.
+This applies ``backend/db/seed_products.sql``, which is the source of truth for
+the product catalog (generated from PostgreSQL with pg_dump). The seed file is
+self-contained and DESTRUCTIVE by design: it runs ``DROP TABLE IF EXISTS
+products`` then recreates and repopulates the table, so re-running it resets the
+catalog to the committed snapshot. Rows keep explicit ids 1..N so the app's
+``ORDER BY id`` load preserves the embedding/order contract.
+
+Note: a fresh Docker volume auto-applies this same file via
+``/docker-entrypoint-initdb.d`` (see docker-compose.yml); this script is for
+reseeding an existing database.
 """
 
 import sys
 from pathlib import Path
 
-import pandas as pd
 import psycopg2
-from psycopg2.extras import execute_values
 
 # Make backend modules importable when run as a standalone script.
 BACKEND_DIR = Path(__file__).resolve().parents[1]
@@ -31,68 +30,34 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 from config import DATABASE_URL, PRODUCTS_TABLE  # noqa: E402
-from data_loader import REQUIRED_PRODUCT_COLUMNS  # noqa: E402
 
-CSV_PATH = BACKEND_DIR / "products.csv"
-
-
-def _create_table_sql(table: str) -> str:
-    # Preserve every CSV column; add a stable integer primary key.
-    # Text columns are TEXT to keep the exact original strings (incl. the
-    # JSON-ish ``attributes`` column). price is NUMERIC to allow decimals.
-    return f"""
-        CREATE TABLE IF NOT EXISTS {table} (
-            id            INTEGER PRIMARY KEY,
-            product_name  TEXT NOT NULL,
-            description   TEXT,
-            main_category TEXT,
-            sub_category  TEXT,
-            target_group  TEXT,
-            product_type  TEXT,
-            features      TEXT,
-            tags          TEXT,
-            attributes    TEXT,
-            price         NUMERIC
-        )
-    """
+SEED_SQL_PATH = BACKEND_DIR / "db" / "seed_products.sql"
 
 
 def main() -> None:
-    # encoding="utf-8-sig" strips a possible UTF-8 BOM (matches data_loader).
-    df = pd.read_csv(CSV_PATH, encoding="utf-8-sig")
+    if not DATABASE_URL:
+        raise SystemExit("DATABASE_URL ayarlı değil; seed uygulanamıyor.")
+    if not SEED_SQL_PATH.exists():
+        raise SystemExit(f"Seed dosyası bulunamadı: {SEED_SQL_PATH}")
 
-    missing = [c for c in REQUIRED_PRODUCT_COLUMNS if c not in df.columns]
-    if missing:
-        raise ValueError(f"products.csv içinde eksik sütun var: {missing}")
+    sql = SEED_SQL_PATH.read_text(encoding="utf-8")
 
-    # Keep CSV column order; convert NaN -> None so NULLs land in PostgreSQL.
-    df = df[REQUIRED_PRODUCT_COLUMNS].where(pd.notna(df), None)
-
-    insert_columns = ["id"] + REQUIRED_PRODUCT_COLUMNS
-    # id = CSV row position (1-based) -> stable ORDER BY id reproduces CSV order.
-    rows = [
-        (i + 1, *(record[col] for col in REQUIRED_PRODUCT_COLUMNS))
-        for i, record in enumerate(df.to_dict("records"))
-    ]
-
-    column_sql = ", ".join(insert_columns)
-    insert_sql = f"INSERT INTO {PRODUCTS_TABLE} ({column_sql}) VALUES %s"
+    print(f"Seed uygulanıyor: {SEED_SQL_PATH}")
+    print("UYARI: bu işlem 'products' tablosunu DROP edip yeniden oluşturur.")
 
     conn = psycopg2.connect(DATABASE_URL)
     try:
-        with conn:  # transaction: commit on success, rollback on error
-            with conn.cursor() as cur:
-                cur.execute(_create_table_sql(PRODUCTS_TABLE))
-                # Re-runnable: wipe and reload so re-seeding never duplicates.
-                cur.execute(f"TRUNCATE TABLE {PRODUCTS_TABLE}")
-                execute_values(cur, insert_sql, rows)
+        conn.autocommit = True
+        with conn.cursor() as cur:
+            # The seed file is pure SQL (no psql meta-commands); psycopg2 can
+            # execute the whole multi-statement script in one call.
+            cur.execute(sql)
+            cur.execute(f"SELECT count(*) FROM {PRODUCTS_TABLE}")
+            count = cur.fetchone()[0]
     finally:
         conn.close()
 
-    print(
-        f"Seed tamam: {len(rows)} ürün '{PRODUCTS_TABLE}' tablosuna yüklendi "
-        f"(id 1..{len(rows)}, CSV sırasına göre)."
-    )
+    print(f"Seed tamam: '{PRODUCTS_TABLE}' tablosunda {count} ürün var.")
 
 
 if __name__ == "__main__":

@@ -16,7 +16,6 @@ if str(BACKEND_DIR) not in sys.path:
 
 from config import (  # noqa: E402
     MODEL_NAME_OR_PATH,
-    PRODUCTS_CSV_PATH,
     SEARCH_TOP_K,
     TAXONOMY_CSV_PATH,
     TAXONOMY_MATCH_THRESHOLD,
@@ -76,7 +75,7 @@ def load_gold_queries(gold_path: Path) -> list[dict[str, Any]]:
 
 def build_eval_context(top_k: int) -> EvalContext:
     model = SentenceTransformer(MODEL_NAME_OR_PATH)
-    products_df = load_products(PRODUCTS_CSV_PATH)
+    products_df = load_products()
 
     search_texts = create_search_text(products_df)
     product_embeddings = model.encode(search_texts)

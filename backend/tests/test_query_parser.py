@@ -1,3 +1,4 @@
+import os
 import unittest
 
 import numpy as np
@@ -23,7 +24,13 @@ class DummyModel:
 class QueryParserQualityTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.df = pd.read_csv("products.csv")
+        # Parser unit tests use a small committed fixture instead of the
+        # runtime catalog: the product source is now PostgreSQL only (no
+        # products.csv at runtime), and tests must not require a live DB.
+        fixture = os.path.join(
+            os.path.dirname(__file__), "fixtures", "products_sample.csv"
+        )
+        cls.df = pd.read_csv(fixture)
         cls.model = DummyModel()
         cls.taxonomy_records = [
             {"field": "main_category", "value": "Spor", "text": "spor urunleri"},
