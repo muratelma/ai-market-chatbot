@@ -967,6 +967,10 @@ def infer_main_category_from_query_context(query):
 def normalize_category_consistency(parsed_query, df, query):
     context_main_category = infer_main_category_from_query_context(query)
 
+    # An explicit main-category term the user literally typed (e.g. "ayakkabı")
+    # must outrank a context word that maps elsewhere (e.g. "koşu" → Spor).
+    explicit_main_category = extract_explicit_main_category(query, df)
+
     # Ana kategori ile alt kategori aynıysa alt kategoriyi temizle.
     # Örnek: main_category=Elektronik, sub_category=Elektronik yanlış.
     if (
@@ -1032,7 +1036,12 @@ def normalize_category_consistency(parsed_query, df, query):
 
     # Product type yoksa ve sorguda güçlü bağlam varsa onu ana kategori olarak kullan.
     # Örnek: "kamp için gece ışık" -> Kamp > Aydınlatma
-    if context_main_category is not None:
+    # Ancak kullanıcı açıkça farklı bir ana kategori yazdıysa (örn. "ayakkabı"),
+    # bağlam kelimesi ("koşu" -> Spor) onu ezmemeli; açık terim önceliklidir.
+    if context_main_category is not None and (
+        explicit_main_category is None
+        or explicit_main_category == context_main_category
+    ):
         parsed_query["main_category"] = context_main_category
 
     # Context düzeltmesinden sonra ana kategori ve alt kategori aynı olduysa temizle.
@@ -1055,6 +1064,17 @@ def normalize_category_consistency(parsed_query, df, query):
 
         # Eğer bu ikili dataset'te yoksa, sub_category'nin gerçek main_category'sini bulmaya çalış
         if check_rows.empty:
+            # Kullanıcı ana kategoriyi açıkça yazdıysa, başka bir kategoriye ait
+            # sub_category onu değiştirmemeli; uyumsuz sub_category'yi düşür.
+            # Örnek: "koşu için ayakkabı" -> main Ayakkabı kalır, sub Koşu düşer.
+            if (
+                explicit_main_category is not None
+                and str(explicit_main_category).lower()
+                == str(parsed_query["main_category"]).lower()
+            ):
+                parsed_query["sub_category"] = None
+                return parsed_query
+
             sub_category_lower = str(parsed_query["sub_category"]).lower()
             matched_rows = df[df["sub_category"].astype(str).str.lower() == sub_category_lower]
             if not matched_rows.empty:

@@ -17,7 +17,13 @@ from config import (
     OLLAMA_ENABLED,
 )
 from data_loader import load_products, load_taxonomy
-from query_parser import parse_query, build_taxonomy_embeddings, get_clarification_response
+from query_parser import (
+    parse_query,
+    build_taxonomy_embeddings,
+    get_clarification_response,
+    extract_price_range,
+    is_query_too_general,
+)
 from search_engine import (
     create_search_text,
     apply_filters,
@@ -312,6 +318,33 @@ def search_products(req: QueryRequest):
                 )
                 parsed_query = original_parsed
                 search_query = effective_query
+        elif _has_category_signal(parsed_query) and is_query_too_general(
+            effective_query, original_parsed, df
+        ):
+            # Normalization invented a category for a request that, in the
+            # user's own words, names no product/category — only attributes
+            # such as price or target group (e.g. "1500 TL altında erkek" →
+            # "erkek giyim").  Trust the user's words: keep it vague so we ask
+            # for clarification instead of recommending products under a
+            # hallucinated category.
+            logger.info(
+                "Normalization hallucinated category for vague query %r (→ %r); reverting.",
+                effective_query,
+                search_query,
+            )
+            parsed_query = original_parsed
+            search_query = effective_query
+
+    # ---- 4c. Restore deterministic price bounds dropped by normalization ----
+    # Price is deterministic and must survive Ollama normalization, which
+    # sometimes strips the numeric range (e.g. "1000 ile 2000 arası elektronik"
+    # → "elektronik ürün").  Re-read the user's original words and restore any
+    # bound the parsed (normalized) query lost.
+    restore_min, restore_max = extract_price_range(effective_query)
+    if parsed_query.get("min_price") is None and restore_min is not None:
+        parsed_query["min_price"] = restore_min
+    if parsed_query.get("max_price") is None and restore_max is not None:
+        parsed_query["max_price"] = restore_max
 
     # ---- 5. Build response plan ----
     response_plan = build_response_plan(
