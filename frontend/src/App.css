@@ -1055,6 +1055,55 @@
   margin-left: auto;
 }
 
+/* Bot message variants — a small label + colored left accent make the
+   message type obvious. Normal chat stays the neutral white baseline. */
+.chatbot-bubble-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  margin-bottom: 6px;
+}
+
+/* Product recommendations: subtle primary accent so they read as results. */
+.chatbot-bubble--product {
+  border-left: 3px solid var(--color-primary);
+}
+
+/* Clarification question: blue, distinct from product results. */
+.chatbot-bubble--clarification {
+  background: var(--color-secondary-light);
+  border-color: #C7D6FF;
+  border-left: 3px solid var(--color-secondary);
+}
+.chatbot-bubble--clarification .chatbot-bubble-label {
+  color: var(--color-secondary);
+}
+
+/* No result: muted/neutral, clearly not a recommendation. */
+.chatbot-bubble--no-result {
+  background: var(--color-bg-tertiary);
+  border-color: var(--color-border);
+  border-left: 3px solid var(--color-text-muted);
+  color: var(--color-text-secondary);
+}
+.chatbot-bubble--no-result .chatbot-bubble-label {
+  color: var(--color-text-muted);
+}
+
+/* Error: warning-tinted so connection problems stand apart from answers. */
+.chatbot-bubble--error {
+  background: var(--color-warning-light);
+  border-color: var(--color-warning-border);
+  border-left: 3px solid var(--color-warning);
+  color: var(--color-warning-text);
+}
+.chatbot-bubble--error .chatbot-bubble-label {
+  color: var(--color-warning);
+}
+
 /* Loading state */
 .chatbot-loading {
   display: flex;

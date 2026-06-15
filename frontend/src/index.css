@@ -16,6 +16,12 @@
   --color-success: #10B981;
   --color-success-light: #ECFDF5;
 
+  /* Warning / Error */
+  --color-warning: #D97706;
+  --color-warning-light: #FFFBEB;
+  --color-warning-border: #FCD9B6;
+  --color-warning-text: #92400E;
+
   /* Neutrals */
   --color-bg: #FFFFFF;
   --color-bg-secondary: #F8F9FA;

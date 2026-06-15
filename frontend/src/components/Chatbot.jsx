@@ -7,6 +7,7 @@ function Chatbot({ isOpen, onToggle, initialQuery }) {
       sender: "bot",
       text: "Merhaba! 👋 Ben AI-Market alışveriş asistanıyım. Size nasıl yardımcı olabilirim? Aradığınız ürünü doğal bir cümleyle yazabilirsiniz.",
       products: [],
+      variant: "chat",
     },
   ]);
   const [loading, setLoading] = useState(false);
@@ -69,6 +70,30 @@ function Chatbot({ isOpen, onToggle, initialQuery }) {
     return "Yanıt hazırlanıyor...";
   };
 
+  // Map a backend /search response to a visual message variant. This only
+  // affects styling; it reads fields the API already returns and does not
+  // change any request or product data.
+  const deriveBotVariant = (data) => {
+    if (data.needs_clarification || data.response_mode === "clarification_only") {
+      return "clarification";
+    }
+    if (data.products && data.products.length > 0) {
+      return "product";
+    }
+    if (data.response_mode === "no_result") {
+      return "no-result";
+    }
+    return "chat";
+  };
+
+  // Small label shown above non-default bot bubbles so the message type is
+  // obvious at a glance. Normal chat and product replies show no label.
+  const VARIANT_LABEL = {
+    clarification: "❓ Soru",
+    "no-result": "🔍 Sonuç bulunamadı",
+    error: "⚠️ Bağlantı sorunu",
+  };
+
   const isNewSearchRequest = (text) => {
     const q = text.toLowerCase();
     const newRequestWords = [
@@ -109,16 +134,20 @@ function Chatbot({ isOpen, onToggle, initialQuery }) {
 
       await new Promise((resolve) => setTimeout(resolve, 400));
 
+      const clarificationNeeded = data.needs_clarification || false;
+
       setMessages((prev) => [
         ...prev,
         {
           sender: "bot",
           text: data.answer,
           products: data.products || [],
+          responseMode: data.response_mode || null,
+          needsClarification: clarificationNeeded,
+          variant: deriveBotVariant(data),
         },
       ]);
 
-      const clarificationNeeded = data.needs_clarification || false;
       setNeedsClarification(clarificationNeeded);
 
       if (clarificationNeeded) {
@@ -133,6 +162,7 @@ function Chatbot({ isOpen, onToggle, initialQuery }) {
           sender: "bot",
           text: "Bağlantı hatası oluştu. Lütfen backend API'nin çalıştığını kontrol edin ve tekrar deneyin. 🔌",
           products: [],
+          variant: "error",
         },
       ]);
     } finally {
@@ -207,7 +237,18 @@ function Chatbot({ isOpen, onToggle, initialQuery }) {
                 <div className="chatbot-msg-avatar">🤖</div>
               )}
               <div className="chatbot-msg-content">
-                <div className={`chatbot-bubble chatbot-bubble-${msg.sender}`}>
+                <div
+                  className={`chatbot-bubble chatbot-bubble-${msg.sender}${
+                    msg.sender === "bot" && msg.variant
+                      ? ` chatbot-bubble--${msg.variant}`
+                      : ""
+                  }`}
+                >
+                  {msg.sender === "bot" && VARIANT_LABEL[msg.variant] && (
+                    <span className="chatbot-bubble-label">
+                      {VARIANT_LABEL[msg.variant]}
+                    </span>
+                  )}
                   {msg.text}
                 </div>
 
