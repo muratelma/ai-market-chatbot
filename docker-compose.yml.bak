@@ -26,11 +26,8 @@ services:
       PGADMIN_DEFAULT_PASSWORD: admin123
     ports:
       - "5050:80"
-    volumes:
-      - aimarket_pgadmin_data:/var/lib/pgadmin
     depends_on:
       - postgres
 
 volumes:
   aimarket_postgres_data:
-  aimarket_pgadmin_data:
