@@ -10,6 +10,7 @@ function Chatbot({ isOpen, onToggle, initialQuery }) {
     },
   ]);
   const [loading, setLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState("Yanıt hazırlanıyor...");
   const [needsClarification, setNeedsClarification] = useState(false);
   const [pendingQuery, setPendingQuery] = useState("");
   const messagesEndRef = useRef(null);
@@ -45,6 +46,29 @@ function Chatbot({ isOpen, onToggle, initialQuery }) {
     hasHandledInitialQuery.current = false;
   }, [initialQuery]);
 
+  // Lightweight, frontend-only guess at whether a message is a product search
+  // or plain chat, used ONLY to pick the loading text. This does not mirror the
+  // backend intent system; when unclear it prefers the neutral chat wording.
+  const guessLoadingText = (text) => {
+    const q = text.toLowerCase();
+
+    // Strong product-search signals: a product/search verb, a price mention,
+    // or a category/shopping keyword. Any hit → "Ürünler aranıyor...".
+    const productSignals = [
+      "öner", "öneri", "tavsiye", "arıyorum", "ariyorum", "bakıyorum",
+      "bakiyorum", "lazım", "lazim", "ihtiyacım", "ihtiyacim", "almak",
+      "satın", "satin", "ürün", "urun", "fiyat", "tl", "lira", "bütçe", "butce",
+    ];
+    const hasPriceNumber = /\d/.test(q) && /(tl|lira|₺|alt|üst|ust|arası|arasi)/.test(q);
+    if (hasPriceNumber || productSignals.some((word) => q.includes(word))) {
+      return "Ürünler aranıyor...";
+    }
+
+    // Otherwise treat it as chat/greeting (merhaba, selam, teşekkürler,
+    // "ne yapabilirsin", …) and prefer the neutral wording.
+    return "Yanıt hazırlanıyor...";
+  };
+
   const isNewSearchRequest = (text) => {
     const q = text.toLowerCase();
     const newRequestWords = [
@@ -71,6 +95,7 @@ function Chatbot({ isOpen, onToggle, initialQuery }) {
     ]);
 
     setInput("");
+    setLoadingText(guessLoadingText(userQuery));
     setLoading(true);
 
     try {
@@ -254,7 +279,7 @@ function Chatbot({ isOpen, onToggle, initialQuery }) {
                     <span></span>
                     <span></span>
                   </div>
-                  Ürünler aranıyor...
+                  {loadingText}
                 </div>
               </div>
             </div>
