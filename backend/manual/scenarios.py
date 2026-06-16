@@ -63,6 +63,7 @@ CHECK_MAIN_CATEGORY = "main_category"     # parsed_query.main_category == expect
 CHECK_SUB_OR_TYPE = "sub_or_type"         # parsed_query sub/product_type == expect_sub_or_type
 CHECK_PRICE = "price_honored"             # every product respects the stated price bound
 CHECK_NO_FABRICATION = "no_fabrication"   # products == [] (no invented catalog item)
+CHECK_PRIMARY_FIRST = "primary_first"     # grouped result is primary-first + expected result_grouping
 
 
 # ---------------------------------------------------------------------------
@@ -87,6 +88,10 @@ class Scenario:
     expect_followup: bool | None = None
     expect_main_category: str | None = None
     expect_sub_or_type: str | None = None
+    # Expected result_grouping ("primary_alternative" | "flat") when the server
+    # runs with AI_MARKET_GROUPED_RANKING on. Checked by CHECK_PRIMARY_FIRST,
+    # which is skipped when the server does not emit grouping fields.
+    expect_result_grouping: str | None = None
 
     # Hard pass/fail checks; remaining expectations are warning-only.
     strict: tuple[str, ...] = field(default_factory=tuple)
@@ -159,8 +164,11 @@ ALL_SCENARIOS: tuple[Scenario, ...] = (
         category="Kamp", kind=KIND_CONTEXT,
         query="kamp için yemek yapacak bir şey lazım",
         expect_products=True, expect_main_category="Kamp", expect_sub_or_type="Pişirme",
-        strict=(CHECK_PRODUCTS, CHECK_MAIN_CATEGORY),
-        notes="Intent (Kamp/Pişirme) must be preserved; exact mode is Ollama-sensitive.",
+        expect_result_grouping="primary_alternative",
+        strict=(CHECK_PRODUCTS, CHECK_MAIN_CATEGORY, CHECK_PRIMARY_FIRST),
+        notes="Intent (Kamp/Pişirme) must be preserved; exact mode is Ollama-sensitive. "
+              "Grouped: Kamp Ocağı (direct cooking equipment) is primary and leads over "
+              "the semantic sibling Kamp Mutfak Seti, which becomes an alternative.",
     ),
 
     # ---- 2. Ayakkabı ----
@@ -168,8 +176,11 @@ ALL_SCENARIOS: tuple[Scenario, ...] = (
         category="Ayakkabı", kind=KIND_BROAD,
         query="ayakkabı öner",
         expect_products=True, expect_followup=True, expect_main_category="Ayakkabı",
-        strict=(CHECK_PRODUCTS, CHECK_FOLLOWUP, CHECK_NO_CLARIFICATION),
-        notes="Resolves to focused_search + soft follow-up (not broad); mode is warning-only.",
+        expect_result_grouping="flat",
+        strict=(CHECK_PRODUCTS, CHECK_FOLLOWUP, CHECK_NO_CLARIFICATION, CHECK_PRIMARY_FIRST),
+        notes="Resolves to focused_search + soft follow-up (not broad); mode is warning-only. "
+              "No explicit problem/type/modifier axis → result_grouping must stay 'flat' "
+              "(must NOT be incorrectly split into primary/alternative).",
     ),
     Scenario(
         category="Ayakkabı", kind=KIND_FOCUSED,
@@ -214,6 +225,15 @@ ALL_SCENARIOS: tuple[Scenario, ...] = (
         expect_products=True, expect_main_category="Giyim",
         strict=(CHECK_PRODUCTS, CHECK_MAIN_CATEGORY),
         notes="Explicit product (elbise) must win over context word (kamp) → main stays Giyim.",
+    ),
+    Scenario(
+        category="Giyim", kind=KIND_FOCUSED,
+        query="kışlık elbise öner",
+        expect_products=True, expect_main_category="Giyim", expect_sub_or_type="Elbise",
+        expect_result_grouping="primary_alternative",
+        strict=(CHECK_PRODUCTS, CHECK_NO_CLARIFICATION, CHECK_PRIMARY_FIRST),
+        notes="Seasonal modifier: kışlık/triko dresses are primary and lead; yazlık "
+              "dresses become alternatives. CHECK_PRIMARY_FIRST skipped if grouping off.",
     ),
 
     # ---- 4. Elektronik ----
@@ -290,8 +310,31 @@ ALL_SCENARIOS: tuple[Scenario, ...] = (
         query="saç dökülmesi için ürün öner",
         expect_mode=MODE_BROAD_SEARCH, expect_products=True,
         expect_main_category="Kişisel Bakım", expect_sub_or_type="Saç Bakımı",
-        strict=(CHECK_MODE, CHECK_PRODUCTS, CHECK_NO_CLARIFICATION),
-        notes="Problem + sub_category, no product_type → diversified broad_search.",
+        expect_result_grouping="primary_alternative",
+        strict=(CHECK_MODE, CHECK_PRODUCTS, CHECK_NO_CLARIFICATION, CHECK_PRIMARY_FIRST),
+        notes="Problem + sub_category, no product_type → diversified broad_search. "
+              "Grouped: dökülme products are primary; CHECK_PRIMARY_FIRST skipped if "
+              "grouping disabled on the server.",
+    ),
+    Scenario(
+        category="Kişisel Bakım", kind=KIND_BROAD,
+        query="yağlı saç için ürün öner",
+        expect_mode=MODE_BROAD_SEARCH, expect_products=True,
+        expect_main_category="Kişisel Bakım", expect_sub_or_type="Saç Bakımı",
+        expect_result_grouping="primary_alternative",
+        strict=(CHECK_PRODUCTS, CHECK_NO_CLARIFICATION, CHECK_PRIMARY_FIRST),
+        notes="Problem-broad: yağlı saç products are primary, lead; non-yağlı "
+              "siblings become alternatives. Mode is Ollama-advisory.",
+    ),
+    Scenario(
+        category="Kişisel Bakım", kind=KIND_FOCUSED,
+        query="yağlı saç için şampuan öner",
+        expect_mode=MODE_FOCUSED_SEARCH, expect_products=True,
+        expect_main_category="Kişisel Bakım", expect_sub_or_type="Şampuan",
+        expect_result_grouping="primary_alternative",
+        strict=(CHECK_MODE, CHECK_PRODUCTS, CHECK_NO_CLARIFICATION, CHECK_PRIMARY_FIRST),
+        notes="Problem + product_type: yağlı şampuanlar are primary; generic "
+              "şampuanlar are alternatives. product_type alone is not primary.",
     ),
     Scenario(
         category="Kişisel Bakım", kind=KIND_CONTEXT,

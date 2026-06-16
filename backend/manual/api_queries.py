@@ -31,6 +31,7 @@ from manual.scenarios import (
     CHECK_NO_CLARIFICATION,
     CHECK_NO_FABRICATION,
     CHECK_PRICE,
+    CHECK_PRIMARY_FIRST,
     CHECK_PRODUCTS,
     Scenario,
 )
@@ -111,6 +112,40 @@ def check_price(sc: Scenario, resp: dict) -> tuple[bool, str]:
     return not bad, f"bounds=[{lo},{hi}] violations={bad}" if bad else f"bounds=[{lo},{hi}] ok"
 
 
+def check_primary_first(sc: Scenario, resp: dict) -> tuple[bool, str]:
+    """Verify the grouped result is primary-first and has the expected grouping.
+
+    Feature-gated: when the server does not emit grouping fields (i.e.
+    AI_MARKET_GROUPED_RANKING is off), this is skipped (passes) so the strict
+    suite stays green against a default server. When grouping IS enabled, it
+    enforces two things deterministically:
+      * ordering — every "primary" precedes every "alternative" (no interleave),
+      * expect_result_grouping — result_grouping matches the scenario, if set.
+    """
+    products = resp.get("products") or []
+    grouping = resp.get("result_grouping")
+    has_labels = any("match_group" in p for p in products)
+
+    if grouping is None and not has_labels:
+        return True, "grouping disabled on server — primary_first skipped"
+
+    groups = [p.get("match_group") for p in products]
+    first_alt = next(
+        (i for i, g in enumerate(groups) if g == "alternative"), len(groups)
+    )
+    ordering_ok = all(g == "primary" for g in groups[:first_alt]) and all(
+        g == "alternative" for g in groups[first_alt:]
+    )
+
+    grouping_ok = True
+    detail = f"result_grouping={grouping!r} order={groups}"
+    if sc.expect_result_grouping is not None:
+        grouping_ok = grouping == sc.expect_result_grouping
+        detail += f" want={sc.expect_result_grouping!r}"
+
+    return ordering_ok and grouping_ok, detail
+
+
 CHECK_DISPATCH = {
     CHECK_MODE: check_mode,
     CHECK_PRODUCTS: check_products,
@@ -119,6 +154,7 @@ CHECK_DISPATCH = {
     CHECK_MAIN_CATEGORY: check_main_category,
     CHECK_NO_FABRICATION: check_no_fabrication,
     CHECK_PRICE: check_price,
+    CHECK_PRIMARY_FIRST: check_primary_first,
 }
 
 

@@ -27,6 +27,100 @@ const CATEGORY_VISUAL = {
 const getCategoryIcon = (product) =>
   CATEGORY_VISUAL[product?.tags?.[0]] || "🛍️";
 
+// Single product card. Extracted so the flat list and the
+// "En uygun ürünler" / "İlgili alternatifler" split can share one renderer.
+function ChatbotProductCard({ product }) {
+  return (
+    <div className="chatbot-product-card">
+      <div className="chatbot-product-top">
+        <div className="chatbot-product-image" aria-hidden="true">
+          {getCategoryIcon(product)}
+        </div>
+        <div className="chatbot-product-info">
+          <h4 className="chatbot-product-name">{product.name}</h4>
+          <div className="chatbot-product-meta">
+            {product.tags && product.tags[0] && (
+              <span className="chatbot-product-tag">
+                {product.tags[0]}
+                {product.tags[1] && ` › ${product.tags[1]}`}
+              </span>
+            )}
+            {product.tags && product.tags[3] && (
+              <span className="chatbot-product-tag">{product.tags[3]}</span>
+            )}
+          </div>
+        </div>
+        <div className="chatbot-product-match">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+          </svg>
+          {product.match}
+        </div>
+      </div>
+
+      <p className="chatbot-product-desc">{product.description}</p>
+
+      <div className="chatbot-product-bottom">
+        <span className="chatbot-product-price">{product.price}</span>
+        <span className="chatbot-product-rating">⭐ {product.rating}</span>
+      </div>
+    </div>
+  );
+}
+
+// Render products as a flat list, or split into "En uygun ürünler" /
+// "İlgili alternatifler" when the backend marks a grouped result
+// (result_grouping === "primary_alternative" with both groups populated).
+// Falls back to the flat list whenever the grouping fields are absent — older
+// or flag-off backends behave exactly as before.
+function renderProductGroups(msg) {
+  const products = msg.products || [];
+  const primary = products.filter((p) => p.match_group === "primary");
+  const alternative = products.filter((p) => p.match_group === "alternative");
+  const useSplit =
+    msg.resultGrouping === "primary_alternative" &&
+    primary.length > 0 &&
+    alternative.length > 0;
+
+  if (!useSplit) {
+    return (
+      <>
+        <div className="chatbot-products-count">
+          🛍️ {products.length} ürün öneriliyor
+        </div>
+        {products.map((product, idx) => (
+          <ChatbotProductCard key={product.id ?? idx} product={product} />
+        ))}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div className="chatbot-products-group">
+        <div className="chatbot-products-heading">
+          ✅ En uygun ürünler
+          <span className="chatbot-products-heading-count">{primary.length}</span>
+        </div>
+        {primary.map((product, idx) => (
+          <ChatbotProductCard key={product.id ?? `p-${idx}`} product={product} />
+        ))}
+      </div>
+      <div className="chatbot-products-group chatbot-products-group-alt">
+        <div className="chatbot-products-heading chatbot-products-heading-alt">
+          🔗 İlgili alternatifler
+          <span className="chatbot-products-heading-count">
+            {alternative.length}
+          </span>
+        </div>
+        {alternative.map((product, idx) => (
+          <ChatbotProductCard key={product.id ?? `a-${idx}`} product={product} />
+        ))}
+      </div>
+    </>
+  );
+}
+
 function Chatbot({ isOpen, onToggle, initialQuery }) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([
@@ -156,6 +250,7 @@ function Chatbot({ isOpen, onToggle, initialQuery }) {
           sender: "bot",
           text: data.answer,
           products: data.products || [],
+          resultGrouping: data.result_grouping || null,
           responseMode: data.response_mode || null,
           needsClarification: clarificationNeeded,
           variant: deriveBotVariant(data),
@@ -313,53 +408,7 @@ function Chatbot({ isOpen, onToggle, initialQuery }) {
                 {/* Product cards */}
                 {msg.products && msg.products.length > 0 && (
                   <div className="chatbot-products">
-                    <div className="chatbot-products-count">
-                      🛍️ {msg.products.length} ürün öneriliyor
-                    </div>
-                    {msg.products.map((product, idx) => (
-                      <div className="chatbot-product-card" key={product.id ?? idx}>
-                        <div className="chatbot-product-top">
-                          <div className="chatbot-product-image" aria-hidden="true">
-                            {getCategoryIcon(product)}
-                          </div>
-                          <div className="chatbot-product-info">
-                            <h4 className="chatbot-product-name">{product.name}</h4>
-                            <div className="chatbot-product-meta">
-                              {product.tags && product.tags[0] && (
-                                <span className="chatbot-product-tag">
-                                  {product.tags[0]}
-                                  {product.tags[1] && ` › ${product.tags[1]}`}
-                                </span>
-                              )}
-                              {product.tags && product.tags[3] && (
-                                <span className="chatbot-product-tag">
-                                  {product.tags[3]}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="chatbot-product-match">
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                            </svg>
-                            {product.match}
-                          </div>
-                        </div>
-
-                        <p className="chatbot-product-desc">
-                          {product.description}
-                        </p>
-
-                        <div className="chatbot-product-bottom">
-                          <span className="chatbot-product-price">
-                            {product.price}
-                          </span>
-                          <span className="chatbot-product-rating">
-                            ⭐ {product.rating}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                    {renderProductGroups(msg)}
                   </div>
                 )}
               </div>

@@ -1213,6 +1213,43 @@
   padding: 0 2px 2px;
 }
 
+/* Primary / alternative grouped sections ("En uygun ürünler" /
+   "İlgili alternatifler"). Rendered only when the backend marks a grouped
+   result; otherwise the flat list above is used. */
+.chatbot-products-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chatbot-products-group-alt {
+  margin-top: 12px;
+}
+
+.chatbot-products-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  padding: 0 2px 2px;
+}
+
+.chatbot-products-heading-alt {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.chatbot-products-heading-count {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-border-light);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
 .chatbot-product-info {
   flex: 1;
   min-width: 0;
