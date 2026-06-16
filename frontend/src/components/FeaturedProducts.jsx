@@ -1,4 +1,13 @@
 import React from "react";
+// Self-hosted product photos — bundled locally so the featured cards are
+// accurate and immune to external (Unsplash) link rot.
+import kampCadiriImg from "../assets/products/kampcadiri2kisilik.jpg";
+import kablosuzKulaklikImg from "../assets/products/kablosuzkulaklik.jpg";
+import kosuAyakkabisiImg from "../assets/products/sporayakkabi.jpg";
+import robotSupurgeImg from "../assets/products/robotsupur.jpg";
+import bebekSampuaniImg from "../assets/products/organik-bebek-sampuani.jpg";
+import yogaMatiImg from "../assets/products/yogamat.jpg";
+import yuzBakimKremiImg from "../assets/products/yuzbakımkrem.jpg";
 
 const FALLBACK_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23F5F6F8'/%3E%3Crect x='140' y='120' width='120' height='120' rx='16' fill='%23E5E7EB'/%3E%3Crect x='155' y='175' width='90' height='8' rx='4' fill='%23D1D5DB'/%3E%3Crect x='170' y='195' width='60' height='6' rx='3' fill='%23D1D5DB'/%3E%3Ccircle cx='200' cy='150' r='18' fill='%23D1D5DB'/%3E%3Cpath d='M193 150l4 4 8-8' stroke='%23F5F6F8' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3Ctext x='200' y='270' font-family='Inter,Arial,sans-serif' font-size='12' fill='%239CA3AF' text-anchor='middle'%3EGörsel yüklenemedi%3C/text%3E%3C/svg%3E";
 
@@ -9,7 +18,7 @@ const featuredProducts = [
     subCategory: "Çadır",
     type: "Kamp Çadırı",
     price: "₺1.899",
-    image: "https://images.unsplash.com/photo-1478827536114-da961b7f86d2?w=480&h=480&fit=crop&auto=format&q=80",
+    image: kampCadiriImg,
     tags: ["Su Geçirmez", "Hafif"],
   },
   {
@@ -18,7 +27,7 @@ const featuredProducts = [
     subCategory: "Kulaklık",
     type: "Bluetooth Kulaklık",
     price: "₺899",
-    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=480&h=480&fit=crop&auto=format&q=80",
+    image: kablosuzKulaklikImg,
     tags: ["Kablosuz", "Gürültü Önleme"],
   },
   {
@@ -27,7 +36,7 @@ const featuredProducts = [
     subCategory: "Spor Ayakkabı",
     type: "Koşu Ayakkabısı",
     price: "₺1.299",
-    image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=480&h=480&fit=crop&auto=format&q=80",
+    image: kosuAyakkabisiImg,
     tags: ["Hafif", "Esnek"],
   },
   {
@@ -36,7 +45,7 @@ const featuredProducts = [
     subCategory: "Temizlik",
     type: "Robot Süpürge",
     price: "₺4.999",
-    image: "https://images.unsplash.com/photo-1667166527498-b981c2b21fbc?w=480&h=480&fit=crop&auto=format&q=80",
+    image: robotSupurgeImg,
     tags: ["Akıllı", "Otomatik"],
   },
   {
@@ -45,7 +54,7 @@ const featuredProducts = [
     subCategory: "Bakım",
     type: "Bebek Şampuanı",
     price: "₺189",
-    image: "https://images.unsplash.com/photo-1631729371254-42c2892f0e6e?w=480&h=480&fit=crop&auto=format&q=80",
+    image: bebekSampuaniImg,
     tags: ["Organik", "Doğal"],
   },
   {
@@ -54,7 +63,7 @@ const featuredProducts = [
     subCategory: "Fitness",
     type: "Yoga Matı",
     price: "₺349",
-    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=480&h=480&fit=crop&auto=format&q=80",
+    image: yogaMatiImg,
     tags: ["Kaymaz", "Kalın"],
   },
   {
@@ -72,7 +81,7 @@ const featuredProducts = [
     subCategory: "Cilt Bakım",
     type: "Krem",
     price: "₺259",
-    image: "https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=480&h=480&fit=crop&auto=format&q=80",
+    image: yuzBakimKremiImg,
     tags: ["Nemlendirici", "Doğal"],
   },
 ];

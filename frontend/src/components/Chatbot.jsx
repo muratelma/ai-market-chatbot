@@ -1,5 +1,32 @@
 import React, { useState, useRef, useEffect } from "react";
 
+// API endpoint — configurable for demos on other hosts/ports via a Vite env
+// var, with the local backend as the default. Frontend-only; the request
+// shape is unchanged.
+const API_URL =
+  import.meta.env?.VITE_API_URL || "http://127.0.0.1:8000/search";
+
+// Category → emoji for the product thumbnail, so a list of 5 products is not
+// visually identical. Derived client-side from the product's main category
+// (tags[0]); no backend or data-contract change.
+const CATEGORY_VISUAL = {
+  "Kamp": "🏕️",
+  "Ayakkabı": "👟",
+  "Giyim": "👕",
+  "Elektronik": "🔌",
+  "Spor": "🏋️",
+  "Kişisel Bakım": "🧴",
+  "Ev & Yaşam": "🛋️",
+  "Mutfak": "🍳",
+  "Anne & Bebek": "🍼",
+  "Aksesuar": "👜",
+  "Otomotiv": "🚗",
+  "Kırtasiye": "✏️",
+};
+
+const getCategoryIcon = (product) =>
+  CATEGORY_VISUAL[product?.tags?.[0]] || "🛍️";
+
 function Chatbot({ isOpen, onToggle, initialQuery }) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([
@@ -103,28 +130,15 @@ function Chatbot({ isOpen, onToggle, initialQuery }) {
     return newRequestWords.some((word) => q.includes(word));
   };
 
-  const sendMessage = async (overrideText) => {
-    const userQuery = (overrideText || input).trim();
-    if (!userQuery || loading) return;
-
-    const shouldCombineWithPrevious =
-      pendingQuery && !isNewSearchRequest(userQuery);
-
-    const queryToSend = shouldCombineWithPrevious
-      ? `${pendingQuery} ${userQuery}`
-      : userQuery;
-
-    setMessages((prev) => [
-      ...prev,
-      { sender: "user", text: userQuery, products: [] },
-    ]);
-
-    setInput("");
-    setLoadingText(guessLoadingText(userQuery));
+  // Perform the actual /search request for an already-resolved query string.
+  // Split out from sendMessage so the error "Tekrar dene" button can re-run
+  // the same query without appending a duplicate user message.
+  const performSearch = async (queryToSend, displayQuery) => {
+    setLoadingText(guessLoadingText(displayQuery));
     setLoading(true);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/search", {
+      const response = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: queryToSend }),
@@ -155,7 +169,7 @@ function Chatbot({ isOpen, onToggle, initialQuery }) {
       } else {
         setPendingQuery("");
       }
-    } catch (error) {
+    } catch {
       setMessages((prev) => [
         ...prev,
         {
@@ -163,11 +177,37 @@ function Chatbot({ isOpen, onToggle, initialQuery }) {
           text: "Bağlantı hatası oluştu. Lütfen backend API'nin çalıştığını kontrol edin ve tekrar deneyin. 🔌",
           products: [],
           variant: "error",
+          failedQuery: queryToSend,
         },
       ]);
     } finally {
       setLoading(false);
     }
+  };
+
+  const sendMessage = async (overrideText) => {
+    const userQuery = (overrideText || input).trim();
+    if (!userQuery || loading) return;
+
+    const shouldCombineWithPrevious =
+      pendingQuery && !isNewSearchRequest(userQuery);
+
+    const queryToSend = shouldCombineWithPrevious
+      ? `${pendingQuery} ${userQuery}`
+      : userQuery;
+
+    setMessages((prev) => [
+      ...prev,
+      { sender: "user", text: userQuery, products: [] },
+    ]);
+
+    setInput("");
+    await performSearch(queryToSend, userQuery);
+  };
+
+  const handleRetry = (queryToSend) => {
+    if (loading || !queryToSend) return;
+    performSearch(queryToSend, queryToSend);
   };
 
   const handleSendMessage = () => sendMessage();
@@ -230,7 +270,13 @@ function Chatbot({ isOpen, onToggle, initialQuery }) {
         </div>
 
         {/* Messages area */}
-        <div className="chatbot-messages" id="chatbot-messages">
+        <div
+          className="chatbot-messages"
+          id="chatbot-messages"
+          role="log"
+          aria-live="polite"
+          aria-label="Sohbet mesajları"
+        >
           {messages.map((msg, index) => (
             <div key={index} className={`chatbot-msg chatbot-msg-${msg.sender}`}>
               {msg.sender === "bot" && (
@@ -250,20 +296,31 @@ function Chatbot({ isOpen, onToggle, initialQuery }) {
                     </span>
                   )}
                   {msg.text}
+
+                  {/* Retry affordance on connection errors */}
+                  {msg.variant === "error" && msg.failedQuery && (
+                    <button
+                      type="button"
+                      className="chatbot-retry-btn"
+                      onClick={() => handleRetry(msg.failedQuery)}
+                      disabled={loading}
+                    >
+                      ↻ Tekrar dene
+                    </button>
+                  )}
                 </div>
 
                 {/* Product cards */}
                 {msg.products && msg.products.length > 0 && (
                   <div className="chatbot-products">
+                    <div className="chatbot-products-count">
+                      🛍️ {msg.products.length} ürün öneriliyor
+                    </div>
                     {msg.products.map((product, idx) => (
-                      <div className="chatbot-product-card" key={idx}>
+                      <div className="chatbot-product-card" key={product.id ?? idx}>
                         <div className="chatbot-product-top">
-                          <div className="chatbot-product-image">
-                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
-                              <line x1="3" y1="6" x2="21" y2="6" />
-                              <path d="M16 10a4 4 0 0 1-8 0" />
-                            </svg>
+                          <div className="chatbot-product-image" aria-hidden="true">
+                            {getCategoryIcon(product)}
                           </div>
                           <div className="chatbot-product-info">
                             <h4 className="chatbot-product-name">{product.name}</h4>

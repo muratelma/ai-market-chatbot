@@ -6,7 +6,7 @@ const slides = [
     subtitle: "İhtiyacınızı yazın, en uygun ürünleri anında bulalım. AI-Market asistanı sizin için en doğru önerileri sunar.",
     cta: "Hemen Keşfet",
     accent: "#FF6000",
-    gradient: "linear-gradient(135deg, #FFF5EB 0%, #FFE0CC 50%, #FFECD9 100%)",
+    gradient: "linear-gradient(135deg, #FFEBD6 0%, #FFCEAD 50%, #FFE0C7 100%)",
     emoji: "🤖",
     stats: [
       { icon: "✨", label: "Akıllı Öneri", value: "AI Destekli" },
@@ -19,7 +19,7 @@ const slides = [
     subtitle: "Elektronikten spora, kişisel bakımdan kampa kadar 12 kategoride binlerce ürün sizi bekliyor.",
     cta: "Kategorilere Göz At",
     accent: "#1B4DFF",
-    gradient: "linear-gradient(135deg, #EBF0FF 0%, #D6E0FF 50%, #E8EEFF 100%)",
+    gradient: "linear-gradient(135deg, #DBE5FF 0%, #C2D2FF 50%, #D3E0FF 100%)",
     emoji: "🛍️",
     stats: [
       { icon: "📦", label: "Ürün", value: "1000+" },
@@ -32,7 +32,7 @@ const slides = [
     subtitle: "\"200 TL altı koşu ayakkabısı\" veya \"bebek için organik ürünler\" gibi doğal cümlelerle arama yapın.",
     cta: "Asistanı Dene",
     accent: "#10B981",
-    gradient: "linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 50%, #E6FFF5 100%)",
+    gradient: "linear-gradient(135deg, #D4F7E6 0%, #B8F2D4 50%, #C9F7E0 100%)",
     emoji: "💬",
     stats: [
       { icon: "🗣️", label: "Arama", value: "Doğal Dil" },
@@ -106,10 +106,14 @@ function HeroBanner({ onCtaClick }) {
 
             {/* Stat cards */}
             {slide.stats.map((stat, i) => (
-              <div className={`hero-float-card hero-float-${i + 1}`} key={i}>
+              <div 
+                className={`hero-float-card hero-float-${i + 1}`} 
+                key={i}
+                style={{ "--card-accent": slide.accent }}
+              >
                 <span className="hero-float-icon">{stat.icon}</span>
                 <div className="hero-float-text">
-                  <span className="hero-float-value">{stat.value}</span>
+                  <span className="hero-float-value" style={{ color: slide.accent }}>{stat.value}</span>
                   <span className="hero-float-label">{stat.label}</span>
                 </div>
               </div>

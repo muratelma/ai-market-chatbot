@@ -400,38 +400,56 @@
 
 .hero-float-card {
   position: absolute;
-  background: white;
-  padding: 10px 16px;
-  border-radius: var(--radius-md);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  background: var(--color-bg);
+  padding: 12px 18px;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   white-space: nowrap;
   z-index: 3;
   animation: floatCard 4s ease-in-out infinite;
+  transition: all var(--transition-fast);
+}
+
+.hero-float-card:hover {
+  background: var(--color-bg);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--card-accent);
+  transform: translateY(-2px);
 }
 
 .hero-float-icon {
   font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .hero-float-text {
   display: flex;
   flex-direction: column;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .hero-float-value {
   font-size: var(--font-size-sm);
-  font-weight: 700;
+  font-weight: 800;
   color: var(--color-text-primary);
 }
 
 .hero-float-label {
   font-size: 11px;
-  color: var(--color-text-muted);
-  font-weight: 500;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.2px;
 }
 
 .hero-float-1 {
@@ -602,12 +620,15 @@
 
 .product-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 16px 36px rgba(0,0,0,0.1);
+  box-shadow: 0 18px 40px rgba(255, 96, 0, 0.10), 0 8px 20px rgba(0, 0, 0, 0.06);
+  border-color: var(--color-border-light);
 }
 
 .product-card-image {
   height: 220px;
-  background: var(--color-bg-tertiary);
+  /* Soft branded tint shown while remote photos lazy-load (avoids a flat
+     gray flash) and as a clean backdrop for illustrated products. */
+  background: linear-gradient(135deg, #FFF3EC 0%, #F0F4FF 100%);
   position: relative;
   overflow: hidden;
 }
@@ -616,7 +637,12 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform var(--transition-slow);
+  transition: transform var(--transition-slow), opacity var(--transition-base);
+}
+
+.product-card-photo:not([src]),
+.product-card-photo[src=""] {
+  opacity: 0;
 }
 
 .product-card:hover .product-card-photo {
@@ -1167,15 +1193,24 @@
 }
 
 .chatbot-product-image {
-  width: 48px;
-  height: 48px;
-  min-width: 48px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
   border-radius: var(--radius-sm);
   background: linear-gradient(135deg, #f0f4ff 0%, #fef3ee 100%);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 22px;
+  line-height: 1;
+}
+
+/* Count label framing the product list (e.g. "5 ürün öneriliyor"). */
+.chatbot-products-count {
+  font-size: 11px;
+  font-weight: 600;
   color: var(--color-text-muted);
+  padding: 0 2px 2px;
 }
 
 .chatbot-product-info {
@@ -1218,13 +1253,14 @@
   gap: 3px;
   background: var(--color-success-light);
   color: var(--color-success);
-  padding: 3px 8px;
+  padding: 2px 7px;
   border-radius: var(--radius-full);
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 600;
   white-space: nowrap;
   flex-shrink: 0;
   line-height: 1;
+  opacity: 0.9;
 }
 
 .chatbot-product-desc {
@@ -1247,15 +1283,44 @@
 }
 
 .chatbot-product-price {
-  font-size: var(--font-size-base);
-  font-weight: 700;
+  font-size: var(--font-size-lg);
+  font-weight: 800;
   color: var(--color-primary);
   white-space: nowrap;
+  letter-spacing: -0.01em;
 }
 
 .chatbot-product-rating {
-  font-size: var(--font-size-xs);
+  font-size: 11px;
   color: var(--color-text-muted);
+  opacity: 0.85;
+}
+
+/* Retry button shown inside an error bubble. */
+.chatbot-retry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-warning-text);
+  background: white;
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.chatbot-retry-btn:hover:not(:disabled) {
+  background: var(--color-warning-light);
+  border-color: var(--color-warning);
+}
+
+.chatbot-retry-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 
@@ -1368,12 +1433,16 @@
   }
 
   .hero-float-card {
-    padding: 6px 10px;
-    gap: 6px;
+    padding: 8px 12px;
+    gap: 8px;
+    border-radius: var(--radius-md);
   }
 
   .hero-float-icon {
     font-size: 16px;
+    width: 28px;
+    height: 28px;
+    background: rgba(0, 0, 0, 0.04);
   }
 
   .hero-float-value {
@@ -1507,6 +1576,7 @@
     width: auto;
     max-width: none;
     height: calc(100vh - 80px);
+    height: calc(100dvh - 80px);
     max-height: none;
     border-radius: var(--radius-lg);
     transform-origin: bottom right;
