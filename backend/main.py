@@ -15,6 +15,7 @@ from config import (
     TAXONOMY_CSV_PATH,
     TAXONOMY_MATCH_THRESHOLD,
     OLLAMA_ENABLED,
+    RANKING_V2_ENABLED,
 )
 from data_loader import load_products, load_taxonomy
 from query_parser import (
@@ -36,6 +37,8 @@ from chat_memory import get_or_create_session, resolve_follow_up, update_session
 from chat_normalizer import normalize_query
 from response_rewriter import rewrite_response
 from response_planner import build_response_plan, MODE_BROAD_SEARCH, MODE_FOCUSED_SEARCH
+from ranking_diagnostics import build_ranking_diagnostics
+from ranking_core import finalize_ranking_v2
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -571,10 +574,11 @@ def search_products(req: QueryRequest):
 
     candidate_df = filtered_df if not filtered_df.empty else df.copy()
 
-    # For broad_search, fetch more candidates so diversification has
-    # enough material to pick from across product types.
+    # Fetch a wider candidate pool when the final ordering will re-rank — for
+    # broad diversification OR Stage-2 directness tiering — so the re-ranker has
+    # enough material (a direct match may sit just outside the legacy top-5).
     search_top_k = SEARCH_TOP_K
-    if response_plan.diversify_results:
+    if response_plan.diversify_results or RANKING_V2_ENABLED:
         search_top_k = max(SEARCH_TOP_K * 4, 20)
 
     result_df = semantic_search(
@@ -586,8 +590,23 @@ def search_products(req: QueryRequest):
         top_k=search_top_k,
     )
 
-    # ---- 8. Apply diversification for broad_search ----
-    if response_plan.diversify_results and not result_df.empty:
+    # ---- 8. Final ordering ----
+    if RANKING_V2_ENABLED and not result_df.empty:
+        # Stage 2: regime-aware directness tiering. Direct-intent matches lead;
+        # browse diversity is preserved internally (browse_broad bypasses
+        # tiering). Replaces the legacy diversify/head path when the flag is on.
+        result_df = finalize_ranking_v2(
+            result_df, parsed_query, response_plan, search_query, top_k=SEARCH_TOP_K
+        )
+        response_plan.top_product_types = (
+            result_df["product_type"].dropna().unique().tolist()
+        )
+        logger.info(
+            "Ranking v2 ordering: %d products across types: %s",
+            len(result_df),
+            response_plan.top_product_types,
+        )
+    elif response_plan.diversify_results and not result_df.empty:
         result_df = diversify_results(result_df, top_k=SEARCH_TOP_K)
         # Capture actual top product_types for the rewriter
         response_plan.top_product_types = (
@@ -598,6 +617,22 @@ def search_products(req: QueryRequest):
             len(result_df),
             response_plan.top_product_types,
         )
+
+    # ---- 8b. Ranking diagnostics (Stage 1 — observe-only) ----
+    # Read-only over the FINAL, already-ordered result_df.  Computes directness
+    # signals + the diversification regime and exposes them in a debug field.
+    # Does NOT reorder, filter, or rescore anything.
+    ranking_diagnostics = build_ranking_diagnostics(
+        parsed_query, result_df, search_query, response_plan
+    )
+    logger.info(
+        "Ranking diagnostics: regime=%s, direct_tier=%d/%d, "
+        "direct_after_non_direct=%s",
+        ranking_diagnostics["regime"],
+        ranking_diagnostics["direct_tier_count"],
+        ranking_diagnostics["product_count"],
+        ranking_diagnostics["direct_after_non_direct"],
+    )
 
     # ---- 9. Build product list (same structure as before) ----
     products = []
@@ -664,4 +699,5 @@ def search_products(req: QueryRequest):
         **debug_info,
         "response_mode": response_plan.mode,
         "response_source": "ollama_rewrite" if rewriter_used else "template",
+        "ranking_diagnostics": ranking_diagnostics,
     }

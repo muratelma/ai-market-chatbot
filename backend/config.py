@@ -66,6 +66,15 @@ TAXONOMY_CSV_PATH = _resolve_data_path("AI_MARKET_TAXONOMY_CSV", "taxonomy.csv")
 SEARCH_TOP_K = _get_env_int("AI_MARKET_TOP_K", 5, minimum=1)
 TAXONOMY_MATCH_THRESHOLD = _get_env_float("AI_MARKET_TAXONOMY_MATCH_THRESHOLD", 0.65)
 
+# ---- Core ranking (Stage 2) ----
+# When enabled, the final search results are re-ordered by a directness tier
+# (DIRECT > RELATED > OTHER) before the blended score, so direct-intent matches
+# lead. Disabled by default: off ⇒ the legacy diversify/head ordering is used
+# unchanged. See ranking_core.finalize_ranking_v2 and the embedding/order
+# contract note in data_loader (tiering reorders FINAL results only; it never
+# reorders the source DataFrame or its embeddings).
+RANKING_V2_ENABLED = _get_env_str("AI_MARKET_RANKING_V2", "false").lower() in ("true", "1", "yes")
+
 # ---- Product catalog source ----
 # PostgreSQL is the ONLY runtime product source (there is no CSV fallback).
 # The catalog is loaded once at startup with ORDER BY id; see data_loader and
