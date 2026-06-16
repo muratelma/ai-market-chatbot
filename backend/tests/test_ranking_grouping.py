@@ -11,6 +11,8 @@ from ranking_core import (
     has_explicit_axis,
     determine_result_grouping,
     match_group_for,
+    compute_grouping,
+    finalize_ranking_v2,
     TIER_DIRECT,
     TIER_RELATED,
     TIER_OTHER,
@@ -115,6 +117,41 @@ def test_diagnostics_grouping_split_problem_query():
     assert groups["Keratin Onarıcı Şampuan"] == GROUP_ALTERNATIVE
     assert diag["primary_count"] == 1
     assert diag["alternative_count"] == 1
+
+
+def test_compute_grouping_aligned_and_primary_first():
+    # Pipeline view: finalize then group. Primaries must be contiguous at the
+    # top, and the match_group list must align to the ordered rows.
+    parsed = {"product_type": "Şampuan", "sub_category": "Saç Bakımı",
+              "main_category": "Kişisel Bakım", "features": []}
+    plan = ResponsePlan(mode=MODE_FOCUSED_SEARCH, user_problem="yağlı saç")
+    df = pd.DataFrame([
+        _row("Keratin Onarıcı Şampuan", "Şampuan", tags="onarıcı",
+             sub="Saç Bakımı", main="Kişisel Bakım", score=0.95),
+        _row("Yağlı Saç Şampuanı", "Şampuan", tags="yağlı saç",
+             sub="Saç Bakımı", main="Kişisel Bakım", score=0.70),
+        _row("Dökülme Karşıtı Şampuan", "Şampuan", tags="saç dökülmesi",
+             sub="Saç Bakımı", main="Kişisel Bakım", score=0.60),
+    ])
+    ordered = finalize_ranking_v2(df, parsed, plan, "yağlı saç için şampuan öner", top_k=5)
+    grouping, groups = compute_grouping(parsed, ordered, plan, "yağlı saç için şampuan öner")
+
+    assert grouping == GROUPING_PRIMARY_ALTERNATIVE
+    assert len(groups) == len(ordered)
+    # The yağlı product is primary and leads.
+    assert ordered["product_name"].tolist()[0] == "Yağlı Saç Şampuanı"
+    assert groups[0] == GROUP_PRIMARY
+    # All primaries precede all alternatives (no interleaving).
+    first_alt = next((i for i, g in enumerate(groups) if g == GROUP_ALTERNATIVE), len(groups))
+    assert all(g == GROUP_PRIMARY for g in groups[:first_alt])
+    assert all(g == GROUP_ALTERNATIVE for g in groups[first_alt:])
+
+
+def test_compute_grouping_empty():
+    plan = ResponsePlan(mode=MODE_FOCUSED_SEARCH, user_problem=None)
+    grouping, groups = compute_grouping({"product_type": None}, pd.DataFrame(), plan, "q")
+    assert grouping == GROUPING_FLAT
+    assert groups == []
 
 
 def test_diagnostics_grouping_flat_for_browse():

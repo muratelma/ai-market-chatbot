@@ -329,3 +329,30 @@ def match_group_for(tier, result_grouping):
     if result_grouping == GROUPING_FLAT:
         return GROUP_PRIMARY
     return GROUP_PRIMARY if tier == TIER_DIRECT else GROUP_ALTERNATIVE
+
+
+def compute_grouping(parsed_query, result_df, response_plan, query):
+    """Compute (result_grouping, [match_group per row]) for the FINAL result_df.
+
+    Single source of truth shared by the response builder (main.py) and the
+    debug diagnostics, so the contract labels and the debug labels never drift.
+    The returned match_group list is aligned to ``result_df.iterrows()`` order;
+    because ``finalize_ranking_v2`` already sorts DIRECT-first, primaries are
+    contiguous at the top — i.e. the products list stays "primary-first".
+    """
+    if result_df is None or result_df.empty:
+        return GROUPING_FLAT, []
+
+    user_problem = getattr(response_plan, "user_problem", None)
+    modifiers = extract_query_modifiers(query)
+
+    tiers = [
+        assign_directness_tier(parsed_query, row, user_problem, modifiers)[0]
+        for _, row in result_df.iterrows()
+    ]
+    direct_count = sum(1 for tier in tiers if tier == TIER_DIRECT)
+    grouping = determine_result_grouping(
+        parsed_query, user_problem, modifiers, direct_count
+    )
+    groups = [match_group_for(tier, grouping) for tier in tiers]
+    return grouping, groups

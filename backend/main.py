@@ -39,7 +39,12 @@ from chat_normalizer import normalize_query
 from response_rewriter import rewrite_response
 from response_planner import build_response_plan, MODE_BROAD_SEARCH, MODE_FOCUSED_SEARCH
 from ranking_diagnostics import build_ranking_diagnostics
-from ranking_core import finalize_ranking_v2
+from ranking_core import (
+    finalize_ranking_v2,
+    compute_grouping,
+    GROUP_PRIMARY,
+    GROUP_ALTERNATIVE,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -658,6 +663,28 @@ def search_products(req: QueryRequest):
             ],
         })
 
+    # ---- 9b. Primary/alternative grouping (Stage 5 — backward-compatible) ----
+    # When enabled, label each product with a match_group and expose grouped
+    # views. `products` is already primary-first (finalize_ranking_v2 sorts
+    # DIRECT-first), so old clients that read `products` see direct matches first
+    # and are otherwise unaffected. When the flag is off, no new fields appear.
+    grouping_fields = {}
+    if GROUPED_RANKING_ENABLED and products:
+        result_grouping, match_groups = compute_grouping(
+            parsed_query, result_df, response_plan, search_query
+        )
+        for product, group in zip(products, match_groups):
+            product["match_group"] = group
+        grouping_fields = {
+            "result_grouping": result_grouping,
+            "primary_products": [
+                p for p in products if p.get("match_group") == GROUP_PRIMARY
+            ],
+            "alternative_products": [
+                p for p in products if p.get("match_group") == GROUP_ALTERNATIVE
+            ],
+        }
+
     # ---- 10. Ollama response rewrite (with response plan) ----
     # For broad_search, the result_status includes the follow-up behavior
     result_status = "products_found"
@@ -695,6 +722,7 @@ def search_products(req: QueryRequest):
     return {
         "answer": answer,
         "products": products,
+        **grouping_fields,
         "parsed_query": parsed_query,
         "needs_clarification": False,
         "follow_up_question": followup_question,
