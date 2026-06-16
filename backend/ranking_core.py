@@ -45,6 +45,17 @@ TIER_RELATED = 1    # same type/category/area but not the explicit need
 TIER_OTHER = 0      # neither
 
 
+# ---------------------------------------------------------------------------
+# Primary / alternative grouping (Stage 4 — labels derived from the tier)
+# ---------------------------------------------------------------------------
+
+GROUP_PRIMARY = "primary"            # "En uygun ürünler"
+GROUP_ALTERNATIVE = "alternative"    # "İlgili alternatifler"
+
+GROUPING_PRIMARY_ALTERNATIVE = "primary_alternative"  # a meaningful split exists
+GROUPING_FLAT = "flat"                                # no explicit axis → one list
+
+
 # Seasonal / material modifiers that should count as matchable signals.
 # Catalog-grounded and intentionally small; matched against a row's signal text
 # (name + tags + features + attributes + product_type).
@@ -276,3 +287,45 @@ def finalize_ranking_v2(result_df, parsed_query, response_plan, query, top_k):
         ["_tier", "score"], ascending=[False, False], kind="stable"
     )
     return work.drop(columns="_tier").head(top_k).reset_index(drop=True)
+
+
+# ---------------------------------------------------------------------------
+# Primary / alternative grouping helpers (Stage 4)
+# ---------------------------------------------------------------------------
+
+def has_explicit_axis(parsed_query, user_problem, query_modifiers):
+    """True when the query carries an explicit intent axis to split around.
+
+    A primary/alternative split is only meaningful when the user named a
+    concrete need: a problem (e.g. "yağlı saç"), a product_type, or a
+    seasonal/material modifier. A pure category browse ("ayakkabı öner") has
+    no such axis — everything is equally a result — so it stays flat.
+    """
+    return bool(
+        user_problem
+        or parsed_query.get("product_type") is not None
+        or query_modifiers
+    )
+
+
+def determine_result_grouping(parsed_query, user_problem, query_modifiers, direct_count):
+    """Decide whether results split into primary/alternative or stay flat.
+
+    Split only when there's an explicit axis AND at least one direct (tier 2)
+    match exists to anchor the "primary" group; otherwise flat.
+    """
+    if has_explicit_axis(parsed_query, user_problem, query_modifiers) and direct_count >= 1:
+        return GROUPING_PRIMARY_ALTERNATIVE
+    return GROUPING_FLAT
+
+
+def match_group_for(tier, result_grouping):
+    """Map a directness tier + grouping mode to a match_group label.
+
+    In flat mode there is no alternative concept — every result is a direct
+    answer to a broad browse, so all are "primary". In split mode, only the
+    DIRECT tier is primary; everything else is an alternative.
+    """
+    if result_grouping == GROUPING_FLAT:
+        return GROUP_PRIMARY
+    return GROUP_PRIMARY if tier == TIER_DIRECT else GROUP_ALTERNATIVE

@@ -25,6 +25,8 @@ from ranking_core import (
     extract_query_modifiers,
     assign_directness_tier,
     classify_diversification_regime,
+    determine_result_grouping,
+    match_group_for,
     REGIME_FOCUSED,
     REGIME_PROBLEM_BROAD,
     REGIME_BROWSE_BROAD,
@@ -113,12 +115,18 @@ def compute_product_directness(parsed_query, row, user_problem, query_modifiers=
     }
 
 
-def build_ranking_diagnostics(parsed_query, result_df, query, response_plan):
+def build_ranking_diagnostics(parsed_query, result_df, query, response_plan,
+                              include_grouping=False):
     """Assemble the query-level ranking diagnostics for the FINAL result_df.
 
     Read-only: iterates the already-ordered ``result_df`` and reports. Never
     mutates or reorders it. Returns a JSON-serialisable dict for a single
     top-level debug key on the ``/search`` response.
+
+    When ``include_grouping`` is set (Stage 4, gated by GROUPED_RANKING_ENABLED),
+    the result also carries a ``result_grouping`` label and a per-product
+    ``match_group`` derived from the directness tier. This is OBSERVE-ONLY: it
+    does not change the products list, ordering, or the response contract.
     """
     user_problem = getattr(response_plan, "user_problem", None)
     regime = classify_diversification_regime(parsed_query, response_plan)
@@ -160,7 +168,7 @@ def build_ranking_diagnostics(parsed_query, result_df, query, response_plan):
             if first_non_direct_index == -1:
                 first_non_direct_index = position
 
-    return {
+    diagnostics = {
         "regime": regime,
         "user_problem": user_problem,
         "query_modifiers": sorted(query_modifiers),
@@ -172,3 +180,23 @@ def build_ranking_diagnostics(parsed_query, result_df, query, response_plan):
         "direct_after_non_direct": direct_after_non_direct,
         "products": products,
     }
+
+    # Stage 4 (debug-only): label each product primary/alternative off its tier.
+    # Observe-only — does not touch ordering or the response contract.
+    if include_grouping:
+        result_grouping = determine_result_grouping(
+            parsed_query, user_problem, query_modifiers, direct_tier_count
+        )
+        for product in products:
+            product["match_group"] = match_group_for(
+                product["directness_tier"], result_grouping
+            )
+        diagnostics["result_grouping"] = result_grouping
+        diagnostics["primary_count"] = sum(
+            1 for p in products if p["match_group"] == "primary"
+        )
+        diagnostics["alternative_count"] = sum(
+            1 for p in products if p["match_group"] == "alternative"
+        )
+
+    return diagnostics

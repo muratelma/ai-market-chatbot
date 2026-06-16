@@ -16,6 +16,7 @@ from config import (
     TAXONOMY_MATCH_THRESHOLD,
     OLLAMA_ENABLED,
     RANKING_V2_ENABLED,
+    GROUPED_RANKING_ENABLED,
 )
 from data_loader import load_products, load_taxonomy
 from query_parser import (
@@ -623,7 +624,8 @@ def search_products(req: QueryRequest):
     # signals + the diversification regime and exposes them in a debug field.
     # Does NOT reorder, filter, or rescore anything.
     ranking_diagnostics = build_ranking_diagnostics(
-        parsed_query, result_df, search_query, response_plan
+        parsed_query, result_df, search_query, response_plan,
+        include_grouping=GROUPED_RANKING_ENABLED,
     )
     logger.info(
         "Ranking diagnostics: regime=%s, direct_tier=%d/%d, "

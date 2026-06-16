@@ -69,11 +69,23 @@ TAXONOMY_MATCH_THRESHOLD = _get_env_float("AI_MARKET_TAXONOMY_MATCH_THRESHOLD", 
 # ---- Core ranking (Stage 2) ----
 # When enabled, the final search results are re-ordered by a directness tier
 # (DIRECT > RELATED > OTHER) before the blended score, so direct-intent matches
-# lead. Disabled by default: off ⇒ the legacy diversify/head ordering is used
-# unchanged. See ranking_core.finalize_ranking_v2 and the embedding/order
-# contract note in data_loader (tiering reorders FINAL results only; it never
-# reorders the source DataFrame or its embeddings).
-RANKING_V2_ENABLED = _get_env_str("AI_MARKET_RANKING_V2", "false").lower() in ("true", "1", "yes")
+# lead. Enabled by default after live validation (Stage 3) and CI regression
+# locks (tests/test_ranking_v2_regression.py). Set AI_MARKET_RANKING_V2=false to
+# fall back to the legacy diversify/head ordering. See
+# ranking_core.finalize_ranking_v2 and the embedding/order contract note in
+# data_loader (tiering reorders FINAL results only; it never reorders the source
+# DataFrame or its embeddings).
+RANKING_V2_ENABLED = _get_env_str("AI_MARKET_RANKING_V2", "true").lower() in ("true", "1", "yes")
+
+# ---- Primary/alternative grouping (Stage 4 — debug-only) ----
+# When enabled, the ranking_diagnostics debug field additionally labels each
+# result with a match_group ("primary" | "alternative") derived from the V2
+# directness tier, plus a result_grouping ("primary_alternative" | "flat").
+# This is OBSERVE-ONLY at this stage: it changes nothing in the products list,
+# the response contract, or ordering — it only enriches the debug field so the
+# classification can be validated before it drives the API/UI (Stages 5-6).
+# Disabled by default. See ranking_core.determine_result_grouping.
+GROUPED_RANKING_ENABLED = _get_env_str("AI_MARKET_GROUPED_RANKING", "false").lower() in ("true", "1", "yes")
 
 # ---- Product catalog source ----
 # PostgreSQL is the ONLY runtime product source (there is no CSV fallback).
