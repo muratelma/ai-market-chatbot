@@ -20,6 +20,7 @@ from config import (
     OLLAMA_ENABLED,
     OLLAMA_MODEL,
     OLLAMA_TIMEOUT_SECONDS,
+    OLLAMA_KEEP_ALIVE,
 )
 
 logger = logging.getLogger(__name__)
@@ -100,6 +101,9 @@ def call_ollama(prompt: str, system_prompt: str) -> dict | None:
         # which then fails parsing and forces a template fallback. This decouples
         # output-format reliability from prompt length/complexity.
         "format": "json",
+        # Keep the model resident in VRAM between requests so an idle gap does
+        # not trigger a slow re-load on the next query.
+        "keep_alive": OLLAMA_KEEP_ALIVE,
         "options": {
             "temperature": 0.3,
             "num_predict": 512,
@@ -143,3 +147,37 @@ def call_ollama(prompt: str, system_prompt: str) -> dict | None:
         logger.warning("Could not extract valid JSON from Ollama response: %.300s", model_text)
 
     return parsed
+
+
+def warm_up_model() -> bool:
+    """Load the model into VRAM ahead of the first user query.
+
+    Sends a tiny generate request so Ollama resolves and resident-loads the
+    model. The first query a user sends would otherwise pay this cold-load cost,
+    which exceeds OLLAMA_TIMEOUT_SECONDS and degrades to a template answer.
+
+    Safe to call from a background thread at startup: never raises, returns True
+    on success and False on any error (Ollama down, model missing, timeout).
+    A generous fixed timeout is used because a cold load can take far longer
+    than the per-request OLLAMA_TIMEOUT_SECONDS.
+    """
+    if not OLLAMA_ENABLED:
+        return False
+
+    url = f"{OLLAMA_BASE_URL.rstrip('/')}/api/generate"
+    payload = {
+        "model": OLLAMA_MODEL,
+        "prompt": "merhaba",
+        "stream": False,
+        "keep_alive": OLLAMA_KEEP_ALIVE,
+        "options": {"num_predict": 1},
+    }
+    try:
+        response = httpx.post(url, json=payload, timeout=180)
+        response.raise_for_status()
+    except Exception as exc:  # noqa: BLE001 — warm-up must never break startup
+        logger.warning("Ollama warm-up failed (%s); first query may be slow.", exc)
+        return False
+
+    logger.info("Ollama model '%s' warmed up and resident.", OLLAMA_MODEL)
+    return True

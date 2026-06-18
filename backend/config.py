@@ -116,3 +116,13 @@ OLLAMA_CONFIDENCE_THRESHOLD = _get_env_float(
     "OLLAMA_CONFIDENCE_THRESHOLD", 0.6, minimum=0.0, maximum=1.0
 )
 
+# Warm-load the model into VRAM at startup (in a background thread) so the FIRST
+# user query does not pay the cold-load cost, which exceeds
+# OLLAMA_TIMEOUT_SECONDS and would otherwise fall back to a template answer.
+OLLAMA_WARMUP = _get_env_str("OLLAMA_WARMUP", "true").lower() in ("true", "1", "yes")
+
+# How long Ollama keeps the model resident after a request (any value its API
+# accepts: "10m", "1h", "-1" for forever). Longer keeps the model warm between
+# queries so it is not re-loaded after an idle gap.
+OLLAMA_KEEP_ALIVE = _get_env_str("OLLAMA_KEEP_ALIVE", "10m")
+

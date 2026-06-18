@@ -1,5 +1,7 @@
 import logging
 import re
+import threading
+from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import FastAPI
@@ -15,6 +17,7 @@ from config import (
     TAXONOMY_CSV_PATH,
     TAXONOMY_MATCH_THRESHOLD,
     OLLAMA_ENABLED,
+    OLLAMA_WARMUP,
     RANKING_V2_ENABLED,
     GROUPED_RANKING_ENABLED,
 )
@@ -48,12 +51,25 @@ from ranking_core import (
     GROUP_PRIMARY,
     GROUP_ALTERNATIVE,
 )
+from ollama_client import warm_up_model
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Warm-load the Ollama model in a background thread so the FIRST user query
+    # does not pay the cold-load cost (which exceeds OLLAMA_TIMEOUT_SECONDS and
+    # would fall back to a template answer). The API starts serving immediately;
+    # the model loads in parallel. The catalog and embeddings are already loaded
+    # at module import time above, so this only concerns Ollama.
+    if OLLAMA_ENABLED and OLLAMA_WARMUP:
+        threading.Thread(target=warm_up_model, name="ollama-warmup", daemon=True).start()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
