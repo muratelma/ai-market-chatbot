@@ -19,6 +19,12 @@ frontend/dist/
 .env
 .env.local
 
+# Local-only docs: keep these out of the public repo. Only README.md and
+# docs/PROJECT_OVERVIEW.md are published.
+/CLAUDE.md
+/docs/*
+!/docs/PROJECT_OVERVIEW.md
+
 # VS Code
 .vscode/
 
