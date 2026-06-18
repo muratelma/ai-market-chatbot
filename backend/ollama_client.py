@@ -94,6 +94,12 @@ def call_ollama(prompt: str, system_prompt: str) -> dict | None:
         "prompt": prompt,
         "system": system_prompt,
         "stream": False,
+        # Constrain the model to emit a syntactically valid JSON object. Every
+        # caller parses JSON, and small models (e.g. gemma3:4b) otherwise drop
+        # the JSON envelope and reply in free-form prose as the prompt grows,
+        # which then fails parsing and forces a template fallback. This decouples
+        # output-format reliability from prompt length/complexity.
+        "format": "json",
         "options": {
             "temperature": 0.3,
             "num_predict": 512,

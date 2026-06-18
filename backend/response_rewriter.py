@@ -54,12 +54,16 @@ REWRITER_SYSTEM_PROMPT = """\
 Sen bir Türkçe e-ticaret alışveriş asistanısın. Görevin, arama sonuçlarına göre kullanıcıya doğal ve samimi bir Türkçe yanıt yazmak.
 
 ## Kurallar
-1. Yalnızca sana verilen ürün listesindeki ürünlerden bahset.
+1. Yalnızca sana verilen ürün listesindeki (top_products) ürünlerden bahset.
 2. Ürün ismi, fiyat, stok veya marka UYDURMA.
-3. Ürün sıralamasını DEĞİŞTİRME.
-4. Yanıtın 1-3 cümle olsun, kısa ve öz.
-5. Samimi ama profesyonel bir ton kullan.
-6. Emoji kullanabilirsin ama abartma.
+3. Bir ürünün belirli bir özelliğe sahip olduğunu (ör. su geçirmez, deri, kablosuz, su soğutmalı) YALNIZCA o özellik ürünün "product_name", "tags" veya "description" alanında açıkça geçiyorsa söyle. Veride yoksa o özellikten hiç bahsetme; üründe varmış gibi gösterme.
+3b. Bağlamda "unavailable_features" verilmişse, o özelliklere sahip ürün YOKTUR: hiçbir ürünün bu özelliği taşıdığını söyleme. Gerekirse "aradığınız [özellik] özelliğine tam uyan bir ürün bulamadım, size en yakın seçenekleri listeledim" gibi dürüst bir ifade kullan.
+4. Ürünü yanlış kategoriye/türe koyma. Bir ürünün kategori veya türünü belirtirken yalnızca onun "tags" alanını kullan; bir montu "ayakkabı", bir çantayı "kulaklık" gibi gösterme.
+5. Eğer listelenen ürünler kullanıcının istediği tür veya özellikte değilse (ör. requested_product_type "Çanta" ama hiçbir üründe çanta yok, ya da requested_features bir üründe geçmiyor), bunu DÜRÜSTÇE belirt: tam eşleşme yerine benzer/alternatif ürünler sunduğunu söyle. Örnek: "Aradığınız çantayı bulamadım ama bütçenize uygun benzer ürünleri listeledim."
+6. Ürün sıralamasını DEĞİŞTİRME.
+7. Yanıtın 1-3 cümle olsun, kısa ve öz.
+8. Samimi ama profesyonel bir ton kullan.
+9. Emoji kullanabilirsin ama abartma.
 
 ## Yanıt modları
 
@@ -138,6 +142,12 @@ def rewrite_response(
             "product_name": p.get("name", ""),
             "price": p.get("price", ""),
             "main_category": (p.get("tags") or [""])[0] if p.get("tags") else "",
+            # Grounding fields: the rewriter may ONLY assert attributes that
+            # actually appear here. Without tags/description the model cannot
+            # verify a requested feature (e.g. "su geçirmez") and tends to
+            # fabricate a match for it.
+            "tags": p.get("tags") or [],
+            "description": p.get("description", ""),
             "match": p.get("match", ""),
         }
         top_summaries.append(summary)
@@ -149,6 +159,22 @@ def rewrite_response(
         "product_count": len(products),
         "top_products": top_summaries,
     }
+
+    # Deterministic, server-side grounding signal. We do NOT pass the raw
+    # requested features (doing so primes a small model to weave the requested
+    # word — e.g. "su geçirmez" — into the answer even when no product has it).
+    # Instead we compute which requested features are absent from EVERY listed
+    # product and tell the model, plainly, that those features are unavailable.
+    if parsed_query.get("features"):
+        grounded = " ".join(
+            f"{p.get('name','')} {' '.join(p.get('tags') or [])} {p.get('description','')}"
+            for p in products[:5]
+        ).lower()
+        unavailable = [f for f in parsed_query["features"] if f.lower() not in grounded]
+        if unavailable:
+            context["unavailable_features"] = unavailable
+    if parsed_query.get("product_type"):
+        context["requested_product_type"] = parsed_query["product_type"]
 
     if clarification_question:
         context["clarification_question"] = clarification_question
