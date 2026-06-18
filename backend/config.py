@@ -1,8 +1,16 @@
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 
 BACKEND_DIR = Path(__file__).resolve().parent
+
+# Load backend/.env (if present) into the process environment BEFORE any config
+# value is read below. This makes `clone -> cp .env.example .env -> run` work
+# without manually exporting DATABASE_URL. Real shell env vars still win
+# (override=False), so CI / docker / explicit exports are unaffected.
+load_dotenv(BACKEND_DIR / ".env", override=False)
 
 
 def _get_env_str(name: str, default: str) -> str:
