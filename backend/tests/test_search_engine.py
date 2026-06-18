@@ -100,3 +100,58 @@ def test_apply_filters_drops_excluded_before_broad_fallback():
     out = apply_filters(df, parsed, enforce_explicit_category=False)
     assert "Mont" not in set(out["product_type"])
     assert set(out["sub_category"]) == {"Elbise"}
+
+
+# ---------------------------------------------------------------------------
+# detect_unavailable_category — deterministic substitution signal
+# ---------------------------------------------------------------------------
+from search_engine import detect_unavailable_category
+
+
+def _results(*rows):
+    # rows: (product_name, main_category, sub_category, product_type)
+    return pd.DataFrame(
+        [(n, mc, sc, pt) for (n, mc, sc, pt) in rows],
+        columns=["product_name", "main_category", "sub_category", "product_type"],
+    )
+
+
+def _parsed_intent(**explicit):
+    return {"explicit_intent": dict(explicit)}
+
+
+def test_unavailable_category_flags_relaxed_subcategory():
+    # User explicitly asked for "Çanta"; the price filter forced a fallback to
+    # clothing/footwear, so no result is a bag -> the request is unavailable.
+    df = _results(
+        ("Kadın Uzun Kaban", "Giyim", "Üst Giyim", "Kaban"),
+        ("Kadın Kışlık Bot", "Ayakkabı", "Bot", "Bot"),
+    )
+    assert detect_unavailable_category(_parsed_intent(sub_category="Çanta"), df) == "Çanta"
+
+
+def test_unavailable_category_none_when_request_is_covered():
+    # Bags are present -> no substitution, nothing to disclose.
+    df = _results(
+        ("El Çantası Deri Kadın", "Aksesuar", "Çanta", "El Çantası"),
+        ("Kadın Omuz Çantası", "Aksesuar", "Çanta", "Omuz Çantası"),
+    )
+    assert detect_unavailable_category(_parsed_intent(sub_category="Çanta"), df) is None
+
+
+def test_unavailable_category_matches_product_type_by_contains():
+    df = _results(("Deri Omuz Çantası", "Aksesuar", "Çanta", "Omuz Çantası"))
+    # Requested product_type "Çanta" is contained in "Omuz Çantası" -> covered.
+    assert detect_unavailable_category(_parsed_intent(product_type="Çanta"), df) is None
+
+
+def test_unavailable_category_ignores_inferred_only_categories():
+    # Nothing user-typed (empty explicit_intent) -> never flag, even if the
+    # inferred parsed category differs from results.
+    df = _results(("Kadın Uzun Kaban", "Giyim", "Üst Giyim", "Kaban"))
+    assert detect_unavailable_category({"explicit_intent": {}}, df) is None
+    assert detect_unavailable_category({}, df) is None
+
+
+def test_unavailable_category_none_for_empty_results():
+    assert detect_unavailable_category(_parsed_intent(sub_category="Çanta"), _results()) is None

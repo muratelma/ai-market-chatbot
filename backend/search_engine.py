@@ -159,6 +159,40 @@ def apply_filters(df, parsed_query, enforce_explicit_category=False):
     return base_pool
 
 
+def detect_unavailable_category(parsed_query, result_df):
+    """Deterministic substitution signal for the response layer.
+
+    ``apply_filters`` silently relaxes the category constraint to ``base_pool``
+    when (e.g. after the hard price filter) no product matches the requested
+    category — so the user can ask for "çanta" in a price band that has no bags
+    and still get a non-empty list of *other* products. That is good for recall
+    but the answer must say so honestly instead of presenting the substitutes as
+    if they matched.
+
+    Return the user-facing label of the most specific dimension the user
+    EXPLICITLY named (``explicit_intent`` — user-typed terms only, never inferred
+    ones) that NO product in the final results matches, or ``None`` when the
+    results genuinely cover the request. Catalog values are Turkish, so the label
+    is safe to show the end user.
+    """
+    if result_df is None or result_df.empty:
+        return None
+
+    explicit = parsed_query.get("explicit_intent") or {}
+    for field in ("product_type", "sub_category", "main_category"):
+        value = explicit.get(field)
+        if not value:
+            continue
+        value_lower = str(value).lower()
+        column = result_df[field].astype(str).str.lower()
+        matched = column.eq(value_lower) | column.str.contains(
+            value_lower, regex=False, na=False
+        )
+        if not matched.any():
+            return str(value)
+    return None
+
+
 def calculate_match_percentage(final_score):
     percentage = final_score * 80
     return int(max(35, min(99, round(percentage))))

@@ -34,6 +34,7 @@ from search_engine import (
     diversify_results,
     build_answer,
     filter_excluded,
+    detect_unavailable_category,
 )
 from chat_intent import classify_intent, INTENT_PRODUCT_SEARCH, INTENT_CLARIFICATION_FOLLOWUP, INTENT_NONSENSE
 from chat_memory import get_or_create_session, resolve_follow_up, update_session
@@ -782,6 +783,12 @@ def search_products(req: QueryRequest):
         result_status = "products_found_with_followup"
         followup_question = response_plan.followup_question
 
+    # Deterministic substitution signal: if the user explicitly asked for a
+    # category/type the final results don't actually contain (the price filter
+    # forced apply_filters to relax the category), the answer must say so rather
+    # than presenting the substitutes as matches.
+    unavailable_category = detect_unavailable_category(parsed_query, result_df)
+
     answer, rewriter_used = rewrite_response(
         original_query=original_query,
         normalized_query=search_query,
@@ -790,6 +797,7 @@ def search_products(req: QueryRequest):
         result_status=result_status,
         clarification_question=followup_question,
         response_plan=response_plan,
+        unavailable_category=unavailable_category,
     )
 
     # ---- 11. Update session ----

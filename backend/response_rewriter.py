@@ -46,6 +46,33 @@ def _strip_markdown_emphasis(text: str) -> str:
     return text.replace("**", "").replace("__", "")
 
 
+def _ensure_substitution_disclosure(text: str, unavailable_category: str | None) -> str:
+    """Guarantee the answer admits a category substitution.
+
+    The search layer can deterministically detect that the user's requested
+    category isn't present in the results (see
+    ``search_engine.detect_unavailable_category``). The model is *instructed* to
+    own this, but small models follow conditional rules unreliably — so if the
+    produced text shows no sign of acknowledging it (neither the category label
+    nor an admission cue), we prepend a fixed honest clause. This makes the
+    behavior model-independent and also covers the template/Ollama-off path.
+    """
+    if not unavailable_category:
+        return text
+    lowered = text.lower()
+    # Only an explicit "couldn't find / instead of" admission counts. We do NOT
+    # treat the mere presence of the category label as acknowledgement: a small
+    # model almost always echoes the user's query term ("kadın çanta
+    # aradığınızda ..."), which is not the same as admitting it has none.
+    admission_cues = ("bulamad", "bulunmuyor", "bulunmama", "bulamıyor", "yerine", "maalesef")
+    if any(cue in lowered for cue in admission_cues):
+        return text
+    return (
+        f"Aradığınız {unavailable_category} kategorisinde uygun bir ürün bulamadım, "
+        f"size en yakın alternatifleri listeledim. "
+    ) + text
+
+
 # ---------------------------------------------------------------------------
 # System prompt
 # ---------------------------------------------------------------------------
@@ -59,7 +86,7 @@ Sen bir Türkçe e-ticaret alışveriş asistanısın. Görevin, arama sonuçlar
 3. Bir ürünün belirli bir özelliğe sahip olduğunu (ör. su geçirmez, deri, kablosuz, su soğutmalı) YALNIZCA o özellik ürünün "product_name", "tags" veya "description" alanında açıkça geçiyorsa söyle. Veride yoksa o özellikten hiç bahsetme; üründe varmış gibi gösterme.
 3b. Bağlamda "unavailable_features" verilmişse, o özelliklere sahip ürün YOKTUR: hiçbir ürünün bu özelliği taşıdığını söyleme. Gerekirse "aradığınız [özellik] özelliğine tam uyan bir ürün bulamadım, size en yakın seçenekleri listeledim" gibi dürüst bir ifade kullan.
 4. Ürünü yanlış kategoriye/türe koyma. Bir ürünün kategori veya türünü belirtirken yalnızca onun "tags" alanını kullan; bir montu "ayakkabı", bir çantayı "kulaklık" gibi gösterme.
-5. Eğer listelenen ürünler kullanıcının istediği tür veya özellikte değilse (ör. requested_product_type "Çanta" ama hiçbir üründe çanta yok, ya da requested_features bir üründe geçmiyor), bunu DÜRÜSTÇE belirt: tam eşleşme yerine benzer/alternatif ürünler sunduğunu söyle. Örnek: "Aradığınız çantayı bulamadım ama bütçenize uygun benzer ürünleri listeledim."
+5. Bağlamda "unavailable_category" verilmişse, kullanıcının istediği o kategoride/türde ürün YOKTUR. Yanıta MUTLAKA bunu dürüstçe söyleyerek başla ve listelenenlerin alternatif olduğunu belirt. Örnek: "Aradığınız [unavailable_category] kategorisinde uygun ürün bulamadım, ama size en yakın alternatifleri listeledim:". Sonra alternatif ürünlerden bahset.
 6. Ürün sıralamasını DEĞİŞTİRME.
 7. Yanıtın 1-3 cümle olsun, kısa ve öz.
 8. Samimi ama profesyonel bir ton kullan.
@@ -102,6 +129,7 @@ def rewrite_response(
     result_status: str,
     clarification_question: str | None = None,
     response_plan: ResponsePlan | None = None,
+    unavailable_category: str | None = None,
 ) -> tuple[str, bool]:
     """
     Generate a natural Turkish assistant response.
@@ -175,6 +203,12 @@ def rewrite_response(
             context["unavailable_features"] = unavailable
     if parsed_query.get("product_type"):
         context["requested_product_type"] = parsed_query["product_type"]
+
+    # Deterministic substitution signal computed by the search layer: the user
+    # asked for this category but no listed product matches it (price filter
+    # relaxed the category). The answer must own this honestly.
+    if unavailable_category:
+        context["unavailable_category"] = unavailable_category
 
     if clarification_question:
         context["clarification_question"] = clarification_question
@@ -251,6 +285,7 @@ def rewrite_response(
     if data is not None:
         assistant_text = _strip_markdown_emphasis(str(data.get("assistant_text", "")).strip())
         if assistant_text:
+            assistant_text = _ensure_substitution_disclosure(assistant_text, unavailable_category)
             # Enforce safeguard: If should_ask_followup is true, the follow-up question must be in the assistant_text.
             if response_plan and response_plan.should_ask_followup and clarification_question:
                 clar_q = clarification_question.strip()
@@ -268,12 +303,14 @@ def rewrite_response(
             base = f"Farklı ürün tiplerinden ({types_str}) seçenekleri listeledim. 🛍️"
         else:
             base = build_answer(parsed_query, len(products))
+        base = _ensure_substitution_disclosure(base, unavailable_category)
         if clarification_question:
             return f"{base}\n\n{clarification_question}", False
         return base, False
 
     if result_status == "products_found":
-        return build_answer(parsed_query, len(products)), False
+        answer = build_answer(parsed_query, len(products))
+        return _ensure_substitution_disclosure(answer, unavailable_category), False
 
     if result_status == "clarification_needed" and clarification_question:
         return clarification_question, False
