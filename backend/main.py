@@ -25,6 +25,7 @@ from query_parser import (
     get_clarification_response,
     extract_price_range,
     is_query_too_general,
+    has_any_product_signal,
 )
 from search_engine import (
     create_search_text,
@@ -32,6 +33,7 @@ from search_engine import (
     semantic_search,
     diversify_results,
     build_answer,
+    filter_excluded,
 )
 from chat_intent import classify_intent, INTENT_PRODUCT_SEARCH, INTENT_CLARIFICATION_FOLLOWUP, INTENT_NONSENSE
 from chat_memory import get_or_create_session, resolve_follow_up, update_session
@@ -108,6 +110,23 @@ def _is_vague_query(query: str) -> bool:
     if not tokens:
         return True
     return all(t in _VAGUE_TOKENS for t in tokens)
+
+
+# Generic product nouns that mark a request as "recommend me something" rather
+# than a specific item ("yağlı saç için ürün öner").  Kept deliberately narrow
+# to the "ürün" family: words like "şey" also appear in *functional* phrases
+# ("yemek yapacak bir şey") that DO name a concrete need (→ Kamp Ocağı), so they
+# must not trigger broadening.
+_GENERIC_PRODUCT_TOKENS: frozenset[str] = frozenset({
+    "ürün", "urun", "ürünü", "urunu", "ürünler", "urunler",
+    "ürünleri", "urunleri", "ürününü", "urununu",
+})
+
+
+def _is_generic_product_request(query: str) -> bool:
+    """True when the user explicitly asked for a generic 'ürün' (no type)."""
+    tokens = set(re.findall(r"\w+", query.lower()))
+    return bool(tokens & _GENERIC_PRODUCT_TOKENS)
 
 
 print("Model yükleniyor...")
@@ -343,6 +362,27 @@ def search_products(req: QueryRequest):
             )
             parsed_query = original_parsed
             search_query = effective_query
+        elif (
+            _has_category_signal(parsed_query)
+            and normalization.needs_clarification
+            and not has_any_product_signal(original_parsed)
+        ):
+            # Unreal / out-of-catalog item net: the user's literal words name no
+            # product signal at all (e.g. "zaman makinesi almak istiyorum"), yet
+            # normalization both invented a category AND flagged uncertainty —
+            # i.e. it mapped a non-existent item onto a real one ("zaman makinesi"
+            # → "seyahat oyuncakları").  Trust the user's words: revert so the
+            # no-catalog-match path returns a safe no-result instead of unrelated
+            # products.  Confident, non-clarifying normalizations (legit implicit
+            # queries like "şarjım dışarıda bitiyor" → "powerbank") are untouched.
+            logger.info(
+                "Normalization mapped an unknown item to a category for %r (→ %r); "
+                "reverting to no-result.",
+                effective_query,
+                search_query,
+            )
+            parsed_query = original_parsed
+            search_query = effective_query
 
     # ---- 4c. Restore deterministic price bounds dropped by normalization ----
     # Price is deterministic and must survive Ollama normalization, which
@@ -354,6 +394,31 @@ def search_products(req: QueryRequest):
         parsed_query["min_price"] = restore_min
     if parsed_query.get("max_price") is None and restore_max is not None:
         parsed_query["max_price"] = restore_max
+
+    # ---- 4d. Undo a normalizer-injected product_type for generic requests ----
+    # The user's own words named NO product type and asked for a generic "ürün"
+    # ("yağlı saç için ürün öner"), but Ollama narrowed it to a single type
+    # ("...şampuan...").  That collapses the search to one product_type and drops
+    # same-problem products of other types (e.g. the yağlı "Saç Toniği"/"Saç
+    # Maskesi"), then backfills the slot with an unrelated same-type product
+    # ("Dökülme Karşıtı Şampuan").  Trust the user's words: drop the injected
+    # type so the search stays broad across the category/problem.  We keep the
+    # sub/main category, so the pool is still "Saç Bakımı", just not şampuan-only.
+    _explicit_intent = parsed_query.get("explicit_intent") or {}
+    if (
+        parsed_query.get("product_type") is not None
+        and _explicit_intent.get("product_type") is None
+        and _is_generic_product_request(effective_query)
+        and (parsed_query.get("sub_category") is not None
+             or parsed_query.get("main_category") is not None)
+    ):
+        logger.info(
+            "Generic request %r carried no explicit product_type; dropping the "
+            "normalizer-injected type %r to keep the search broad.",
+            effective_query,
+            parsed_query.get("product_type"),
+        )
+        parsed_query["product_type"] = None
 
     # ---- 5. Build response plan ----
     response_plan = build_response_plan(
@@ -374,10 +439,18 @@ def search_products(req: QueryRequest):
     # honor its clarification request when the parser ALSO failed to find a
     # searchable category — i.e. the plan is not a search mode.  When the plan
     # is broad/focused search, the user told us enough; proceed to products.
+    #
+    # We also refuse to surface Ollama's clarification text for requests that
+    # carry NO product signal and are not vague filler ("zaman makinesi almak
+    # istiyorum"): the normalizer's question there tends to play along with a
+    # non-existent item ("Hangi tür zaman makinesine ihtiyacınız var?").  Those
+    # fall through to the deterministic no-catalog-match path below, which
+    # returns the safe no-result message instead.
     if (
         normalization.needs_clarification
         and normalization.clarification_question
         and response_plan.mode not in (MODE_BROAD_SEARCH, MODE_FOCUSED_SEARCH)
+        and (has_any_product_signal(parsed_query) or _is_vague_query(original_query))
     ):
         update_session(
             session,
@@ -523,19 +596,31 @@ def search_products(req: QueryRequest):
             }
 
     # ---- 7. Filtering + search ----
-    # Seasonal modifiers ("kışlık", "yazlık", ...) embed close to outerwear
-    # (Mont/Kaban/Bot), so on a small explicit-category pool the broad fallback
-    # can drift to a sibling category (e.g. "kışlık elbise" → Mont). When such a
-    # modifier appears AND the user named an explicit sub_category/product_type,
-    # enforce that category so the explicit term outranks the seasonal one.
-    # Restricted to a closed seasonal-word set so ordinary context queries
-    # (e.g. "koşu için ayakkabı") keep their whole-catalog rescue.
+    # Explicit positive product intent lock: when the user explicitly NAMED a
+    # product_type / sub_category (even inflected — "elbisesi", "elbiseleri"),
+    # enforce that category pool so modifiers/features ("kışlık", "sıcak tutan",
+    # "günlük", "su geçirmez") only REFINE ranking inside it and never let the
+    # broad fallback drift to a sibling category (e.g. "kışlık/sıcak tutan kadın
+    # elbisesi" → Mont/Kaban). ``explicit_intent`` holds only the user-typed
+    # terms, so an inferred category (alias/context, e.g. "kamp için yemek
+    # yapacak bir şey" → Kamp Ocağı) still keeps its whole-catalog rescue.
+    #
+    # As a secondary trigger we keep the original seasonal-word rule for the case
+    # where the explicit category was only inferred but a seasonal modifier is
+    # present.
     _query_tokens = set(re.findall(r"\w+", f"{search_query} {effective_query}".lower()))
+    explicit_intent = parsed_query.get("explicit_intent") or {}
+    has_explicit_user_category = (
+        explicit_intent.get("sub_category") is not None
+        or explicit_intent.get("product_type") is not None
+    )
     has_explicit_category = (
         parsed_query.get("sub_category") is not None
         or parsed_query.get("product_type") is not None
     )
-    enforce_category = has_explicit_category and bool(_query_tokens & _SEASONAL_WORDS)
+    enforce_category = has_explicit_user_category or (
+        has_explicit_category and bool(_query_tokens & _SEASONAL_WORDS)
+    )
     filtered_df = apply_filters(df, parsed_query, enforce_explicit_category=enforce_category)
 
     has_filter = any([
@@ -579,6 +664,9 @@ def search_products(req: QueryRequest):
         }
 
     candidate_df = filtered_df if not filtered_df.empty else df.copy()
+    # Re-apply the negative constraint on the whole-catalog fallback so rejected
+    # categories/types never slip back in when apply_filters returned empty.
+    candidate_df = filter_excluded(candidate_df, parsed_query.get("excluded_terms"))
 
     # Fetch a wider candidate pool when the final ordering will re-rank — for
     # broad diversification OR Stage-2 directness tiering — so the re-ranker has

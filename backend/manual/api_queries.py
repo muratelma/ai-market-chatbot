@@ -30,6 +30,7 @@ from manual.scenarios import (
     CHECK_MODE,
     CHECK_NO_CLARIFICATION,
     CHECK_NO_FABRICATION,
+    CHECK_NO_FORBIDDEN_TYPES,
     CHECK_PRICE,
     CHECK_PRIMARY_FIRST,
     CHECK_PRODUCTS,
@@ -146,6 +147,31 @@ def check_primary_first(sc: Scenario, resp: dict) -> tuple[bool, str]:
     return ordering_ok and grouping_ok, detail
 
 
+def check_no_forbidden_types(sc: Scenario, resp: dict) -> tuple[bool, str]:
+    """No returned product's sub_category/product_type may match a forbid_types term.
+
+    Enforces explicit negative constraints ("mont veya kaban değil"): the
+    rejected outerwear must never appear in the visible results. Each product's
+    tags carry [main, sub, target, product_type]; we scan sub_category and
+    product_type for any forbidden substring (case-insensitive).
+    """
+    forbidden = [f.lower() for f in sc.forbid_types]
+    if not forbidden:
+        return True, "no forbid_types set"
+    offenders = []
+    for p in resp.get("products") or []:
+        tags = [str(t).lower() for t in (p.get("tags") or [])]
+        haystack = " ".join(tags)
+        for term in forbidden:
+            if term in haystack:
+                offenders.append(p.get("name"))
+                break
+    return not offenders, (
+        f"forbidden={sc.forbid_types} offenders={offenders}" if offenders
+        else f"forbidden={sc.forbid_types} none present"
+    )
+
+
 CHECK_DISPATCH = {
     CHECK_MODE: check_mode,
     CHECK_PRODUCTS: check_products,
@@ -155,6 +181,7 @@ CHECK_DISPATCH = {
     CHECK_NO_FABRICATION: check_no_fabrication,
     CHECK_PRICE: check_price,
     CHECK_PRIMARY_FIRST: check_primary_first,
+    CHECK_NO_FORBIDDEN_TYPES: check_no_forbidden_types,
 }
 
 

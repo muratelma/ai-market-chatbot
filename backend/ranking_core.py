@@ -122,6 +122,35 @@ def problem_match(user_problem, signal_text):
     return needle in signal_text
 
 
+# Problems that are direct opposites of one another: a product built to solve
+# one is actively wrong for the other (oily vs dry hair/skin). Keys and values
+# are pre-normalized (normalize_text_for_match form). When the user states one
+# problem, a row whose signal matches the opposite — and which does NOT match
+# the user's own problem — is demoted to TIER_OTHER so it sinks below neutral
+# same-type siblings instead of surfacing as an "alternative" (e.g. a "Kuru
+# Saçlar İçin ... Şampuan" must not appear for a "yağlı saç" request).
+#
+# The needles include "sac"/"cilt" so they never fire on unrelated tokens such
+# as "kuru şampuan" (a dry-shampoo product *type*, which is valid for oily hair).
+_OPPOSITE_PROBLEM_SIGNALS: dict[str, tuple[str, ...]] = {
+    "yagli sac": ("kuru sac",),
+    "kuru sac": ("yagli sac", "yaglanma"),
+    "yagli cilt": ("kuru cilt",),
+    "kuru cilt": ("yagli cilt",),
+}
+
+
+def opposite_problem_match(user_problem, signal_text):
+    """True when the row addresses the *opposite* of the user's stated problem."""
+    if not user_problem:
+        return False
+    key = normalize_text_for_match(str(user_problem))
+    for opposite in _OPPOSITE_PROBLEM_SIGNALS.get(key, ()):
+        if opposite in signal_text:
+            return True
+    return False
+
+
 def product_type_match(parsed_query, row):
     """Return 'exact' | 'substring' | 'none' for product_type alignment.
 
@@ -208,6 +237,11 @@ def assign_directness_tier(parsed_query, row, user_problem, query_modifiers):
     if user_problem:
         if problem_match(user_problem, signal):
             return TIER_DIRECT, "problem_match"
+        # A product for the OPPOSITE problem (e.g. "kuru saç" when the user
+        # asked about "yağlı saç") is actively wrong: demote below neutral
+        # same-type siblings so it never surfaces as a visible alternative.
+        if opposite_problem_match(user_problem, signal):
+            return TIER_OTHER, "problem_opposite"
         if product_type_match(parsed_query, row) == "exact" or sub_match:
             return TIER_RELATED, "same_type_or_sub"
         return TIER_OTHER, "other"

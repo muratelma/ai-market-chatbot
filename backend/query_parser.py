@@ -182,6 +182,19 @@ QUERY_ALIASES = [
             "product_type": "Monitör",
         },
     },
+    # Tablet stylus: "dokunmatik kalem" / "stylus" is a touchscreen pen, not a
+    # writing pen — without this it mis-routes to Kırtasiye › Kalem.  Pin it to
+    # the Elektronik tablet-pen product_type so the tablet styluses surface.
+    {
+        "keywords": ["dokunmatik kalem", "tablet kalemi", "tablet kalem",
+                     "stylus kalem", "stylus", "tablet için kalem",
+                     "tablet için dokunmatik kalem"],
+        "fields": {
+            "main_category": "Elektronik",
+            "sub_category": "Tablet Aksesuarı",
+            "product_type": "Tablet Kalemi",
+        },
+    },
     # Outdoor pants
     {
         "keywords": ["doğa yürüyüşü için pantolon", "outdoor pantolon", "trekking pantolon",
@@ -254,6 +267,66 @@ def contains_phrase(text, phrase):
 
     pattern = rf"(?:^|\s){re.escape(normalized_phrase)}(?:\s|$)"
     return re.search(pattern, normalized_text) is not None
+
+
+# ---------------------------------------------------------------------------
+# Inflection-aware term matching (Turkish nominal suffixes)
+# ---------------------------------------------------------------------------
+# Whole-word matching misses inflected product nouns the user actually typed
+# ("elbisesi", "elbiseleri", "pantolonu", "çantası", "şampuanı", "ayakkabıyı").
+# That silently drops the explicit positive intent and lets modifier-driven
+# taxonomy inference take over.  We match a catalog term against a query word
+# when the word is the term plus a known Turkish nominal suffix (case / plural /
+# possessive / instrumental).  Text is already folded to ASCII by
+# ``normalize_text_for_match`` (ç→c, ğ→g, ı→i, ö→o, ş→s, ü→u), so suffixes are
+# listed in their folded form.  Derivational suffixes (-lik/-li) are excluded
+# on purpose — they change meaning ("elbiselik" = dress *fabric*).
+_TR_INFLECTION_SUFFIXES: frozenset[str] = frozenset({
+    "",
+    "i", "u",                       # accusative / 3sg possessive
+    "yi", "yu", "si", "su",         # same, after a vowel
+    "e", "a", "ye", "ya",           # dative
+    "de", "da", "te", "ta",         # locative
+    "den", "dan", "ten", "tan",     # ablative
+    "in", "un", "nin", "nun",       # genitive
+    "n", "ni", "nu",                # 2sg possessive / buffer-n
+    "ler", "lar",                   # plural
+    "leri", "lari", "lere", "lara", # plural + case/possessive
+    "lerin", "larin", "lerde", "larda", "lerden", "lardan",
+    "le", "la", "yle", "yla",       # instrumental
+})
+
+# Minimum stem length for inflection matching — short terms ("bot") only match
+# exactly to avoid false positives ("botanik").
+_INFLECTION_MIN_STEM = 4
+
+
+def _word_matches_term(word, term):
+    """True when ``word`` is ``term`` (optionally + a Turkish nominal suffix)."""
+    if word == term:
+        return True
+    if len(term) >= _INFLECTION_MIN_STEM and word.startswith(term):
+        return word[len(term):] in _TR_INFLECTION_SUFFIXES
+    return False
+
+
+def contains_term(text, term):
+    """Whole-word OR inflection-aware membership of ``term`` in ``text``.
+
+    Multi-word terms keep the strict whole-phrase rule (``contains_phrase``);
+    single-word terms additionally match common Turkish inflected forms.
+    """
+    if contains_phrase(text, term):
+        return True
+
+    term_norm = normalize_text_for_match(term)
+    if not term_norm or " " in term_norm:
+        return False
+
+    return any(
+        _word_matches_term(word, term_norm)
+        for word in normalize_text_for_match(text).split()
+    )
 
 
 def apply_query_aliases(query, parsed_query):
@@ -339,12 +412,129 @@ def extract_price_range(query):
     return min_price, max_price
 
 
-def find_value_from_column(query, df, column_name):
+# ---------------------------------------------------------------------------
+# Negative product-type / category constraints
+# ---------------------------------------------------------------------------
+# Users sometimes name a product/category only to *reject* it
+# ("mont veya kaban değil, elbise arıyorum").  Those rejected terms must be
+# treated as EXCLUDED, never as the desired intent.  Detection is fully
+# deterministic and runs on the user's literal query, so it still works when
+# Ollama normalization drops the negation.
+
+# Words that, when they follow a product/category term, mark it as rejected.
+_NEGATION_CUES: frozenset[str] = frozenset({
+    "degil", "degildir", "degilim",
+    "istemiyorum", "istemem", "istemedigim", "istemedim", "istemez",
+    "aramiyorum", "aramam", "aramiyor",
+    "olmasin", "istemyorum",
+    "haric", "disinda",
+})
+
+# Connector words allowed between rejected terms in a single negative clause
+# ("mont veya kaban değil" → both rejected).
+_NEGATION_CONNECTORS: frozenset[str] = frozenset({
+    "veya", "ya", "yada", "da", "de", "ve", "ile",
+})
+
+# Words that hard-close a negative clause when scanning backwards from a cue,
+# so a rejection ("... değil") never reaches a positive term in a prior clause.
+_NEGATION_BOUNDARY_WORDS: frozenset[str] = frozenset({
+    "ama", "fakat", "ancak", "sadece", "yalniz", "yalnizca",
+})
+
+_NEGATION_BOUNDARY = "|"
+_NEGATION_MAX_LOOKBACK = 6
+
+
+def _build_excludable_token_index(df):
+    """Map each catalog token → the full normalized category values it belongs to.
+
+    Built from main_category / sub_category / product_type so a single rejected
+    word like "mont" can be resolved back to every category value it identifies
+    (the sub_category "Mont" and the product_types "Polar Mont", "Şişme Mont",
+    ...).  Only tokens of length ≥ 3 are indexed to avoid noise.
+    """
+    index = {}
+    for column in ("main_category", "sub_category", "product_type"):
+        for value in df[column].dropna().unique():
+            value_norm = normalize_text_for_match(str(value))
+            if not value_norm:
+                continue
+            for token in value_norm.split():
+                if len(token) >= 3:
+                    index.setdefault(token, set()).add(value_norm)
+    return index
+
+
+def extract_excluded_terms(query, df):
+    """Return the set of normalized catalog values the user explicitly rejected.
+
+    Detects negative product-type/category constraints such as "mont değil",
+    "kaban istemiyorum", "mont veya kaban değil", "mont/kaban istemiyorum".
+    For each negation cue, walks backwards over the immediately preceding
+    catalog terms (allowing connector words) and marks every matched catalog
+    value as excluded.  Returns normalized full values (e.g. {"mont",
+    "polar mont", "kaban"}), which downstream filtering matches against a row's
+    main/sub/product fields.
+    """
+    if not query:
+        return set()
+
+    # Fold to ASCII like the catalog index, but keep clause boundaries as a
+    # marker token so a rejection cannot cross into a neighbouring clause.
+    # "/" is an enumeration separator ("mont/kaban"), NOT a boundary.
+    folded = str(query).lower().translate(TURKISH_CHAR_MAP)
+    folded = re.sub(r"[,.;:!?\n]+", f" {_NEGATION_BOUNDARY} ", folded)
+    folded = re.sub(r"[^\w|\s]", " ", folded)
+    tokens = folded.split()
+    if not tokens:
+        return set()
+
+    token_index = _build_excludable_token_index(df)
+    excluded = set()
+
+    for i, token in enumerate(tokens):
+        if token not in _NEGATION_CUES:
+            continue
+
+        # Walk backwards over the negative clause collecting rejected catalog
+        # terms.  Before the first term is found we may skip filler/unknown
+        # words (so a rejected term missing from the catalog, or a stray word,
+        # doesn't break the chain); once a term is collected we only continue
+        # over connectors/terms, stopping at the first other word so the scan
+        # can't reach a positive term stated earlier ("elbise ... mont değil").
+        started = False
+        for j in range(i - 1, max(-1, i - 1 - _NEGATION_MAX_LOOKBACK), -1):
+            word = tokens[j]
+            if word == _NEGATION_BOUNDARY or word in _NEGATION_BOUNDARY_WORDS:
+                break
+            if word in token_index:
+                excluded.update(token_index[word])
+                started = True
+                continue
+            if word in _NEGATION_CONNECTORS:
+                continue
+            if started:
+                break
+            # else: not started yet — skip filler/unknown and keep scanning.
+
+    return excluded
+
+
+def _is_excluded(value, excluded):
+    if not excluded or value is None:
+        return False
+    return normalize_text_for_match(str(value)) in excluded
+
+
+def find_value_from_column(query, df, column_name, excluded=None):
     values = df[column_name].dropna().unique().tolist()
 
     for value in values:
         value_text = str(value)
-        if value_text and contains_phrase(query, value_text):
+        if _is_excluded(value_text, excluded):
+            continue
+        if value_text and contains_term(query, value_text):
             return value
 
     # Prefix fallback for product_type: when the user writes a base word
@@ -379,6 +569,8 @@ def find_value_from_column(query, df, column_name):
         }
 
         for value in values:
+            if _is_excluded(value, excluded):
+                continue
             value_norm = normalize_text_for_match(str(value))
             if not value_norm:
                 continue
@@ -453,7 +645,7 @@ def clean_query_for_taxonomy(query):
     return q
 
 
-def extract_explicit_main_category(query, df):
+def extract_explicit_main_category(query, df, excluded=None):
     # Category names that are also common context words and need special handling
     ambiguous_categories = ["kamp", "spor"]
 
@@ -477,6 +669,9 @@ def extract_explicit_main_category(query, df):
         if value_lower in ambiguous_categories:
             continue
 
+        if _is_excluded(value, excluded):
+            continue
+
         # Check phrase aliases first (most specific match wins)
         if value in category_phrase_aliases:
             for alias in category_phrase_aliases[value]:
@@ -484,12 +679,13 @@ def extract_explicit_main_category(query, df):
                     return value
             continue  # Already checked via aliases; skip generic match below
 
-        # Generic match: category name appears literally in the query
-        if contains_phrase(query, value_lower):
+        # Generic match: category name appears in the query (inflection-aware,
+        # so "ayakkabıyı", "giyimi", etc. still resolve to their category).
+        if contains_term(query, value_lower):
             return value
 
         # ASCII Turkish fallback for Ayakkabı
-        if value_lower == "ayakkabı" and contains_phrase(query, "ayakkabi"):
+        if value_lower == "ayakkabı" and contains_term(query, "ayakkabi"):
             return value
 
     return None
@@ -623,10 +819,118 @@ def _query_has_explicit_product_type_term(query):
     return False
 
 
+def find_named_value(query, df, column_name, excluded=None):
+    """Strict, inflection-aware detection of a catalog value the user LITERALLY
+    named — whole-term (possibly inflected) only, with no prefix/first-word or
+    "X için Y" heuristics.
+
+    ``find_value_from_column`` is recall-oriented (it guesses "yemek" →
+    "Yemek Takımı"), which is right for resolving the search category but wrong
+    as a signal of explicit user intent.  This helper is the conservative
+    counterpart used to gate the explicit-intent lock and pool enforcement, so a
+    heuristic guess never enforces a category the user did not actually type.
+    """
+    for value in df[column_name].dropna().unique():
+        value_text = str(value)
+        if _is_excluded(value_text, excluded):
+            continue
+        if value_text and contains_term(query, value_text):
+            return value
+    return None
+
+
+def _value_belongs_to(df, column, value, owner_column, owner_value):
+    """True when ``value`` in ``column`` co-occurs with ``owner_value`` in
+    ``owner_column`` somewhere in the catalog (e.g. product_type "Abiye" lives
+    under sub_category "Elbise")."""
+    rows = df[df[column].astype(str).str.lower() == str(value).lower()]
+    if rows.empty:
+        return False
+    owners = {str(v).lower() for v in rows[owner_column].dropna().unique()}
+    return str(owner_value).lower() in owners
+
+
+def _lock_explicit_intent(taxonomy_match, df,
+                          explicit_main, explicit_sub, explicit_product_type):
+    """Drop a taxonomy match that would override an explicit positive intent.
+
+    The taxonomy matcher keys off the whole query, so seasonal/warmth modifiers
+    ("kışlık", "sıcak tutan") can make it land on outerwear even when the user
+    explicitly asked for a dress.  When the user named a concrete
+    product_type / sub_category / main_category, a taxonomy match on a DIFFERENT
+    category for the same axis is suppressed.  Matches consistent with the
+    explicit intent (a narrower product_type within the explicit sub, or the
+    same value) are preserved so legitimate refinement still works.
+    """
+    if taxonomy_match is None:
+        return None
+
+    field = taxonomy_match.get("field")
+    value = taxonomy_match.get("value")
+
+    if field == "main_category" and explicit_main is not None:
+        if str(value).lower() != str(explicit_main).lower():
+            return None
+
+    if field == "sub_category":
+        # A sub_category taxonomy match must agree with an explicit sub, and
+        # must stay inside an explicit main_category if one was given.
+        if explicit_sub is not None and str(value).lower() != str(explicit_sub).lower():
+            return None
+        if (
+            explicit_main is not None
+            and not _value_belongs_to(df, "sub_category", value, "main_category", explicit_main)
+        ):
+            return None
+
+    if field == "product_type":
+        # A product_type taxonomy match must agree with an explicit product_type,
+        # and must live within an explicit sub_category / main_category.
+        if explicit_product_type is not None and str(value).lower() != str(explicit_product_type).lower():
+            return None
+        if (
+            explicit_sub is not None
+            and not _value_belongs_to(df, "product_type", value, "sub_category", explicit_sub)
+        ):
+            return None
+        if (
+            explicit_main is not None
+            and not _value_belongs_to(df, "product_type", value, "main_category", explicit_main)
+        ):
+            return None
+
+    return taxonomy_match
+
+
 def parse_query(query, df, model, taxonomy_embeddings, taxonomy_records, taxonomy_match_threshold=DEFAULT_TAXONOMY_MATCH_THRESHOLD, original_query=None):
     min_price, max_price = extract_price_range(query)
 
-    explicit_main_category = extract_explicit_main_category(query, df)
+    # Negative product-type/category constraints ("mont veya kaban değil").
+    # Detected from the user's literal words (both the original and the
+    # possibly-normalized query) so rejected terms are never mistaken for the
+    # desired intent, even when Ollama drops the negation.
+    excluded_terms = extract_excluded_terms(query, df)
+    if original_query and original_query != query:
+        excluded_terms = excluded_terms | extract_excluded_terms(original_query, df)
+
+    # Explicit positive product/category intent is detected from BOTH the
+    # (possibly Ollama-normalized) query and the user's ORIGINAL words, because
+    # either form can carry the term the user actually typed — and Ollama may
+    # inflect or paraphrase it ("elbisesi" / "elbiseleri").  Inflection-aware
+    # matching (contains_term) catches those forms so the explicit intent is
+    # never lost to a modifier-driven taxonomy match below.
+    def _explicit(column):
+        value = find_value_from_column(query, df, column, excluded=excluded_terms)
+        if value is None and original_query and original_query != query:
+            value = find_value_from_column(original_query, df, column, excluded=excluded_terms)
+        return value
+
+    explicit_main_category = extract_explicit_main_category(query, df, excluded=excluded_terms)
+    if explicit_main_category is None and original_query and original_query != query:
+        explicit_main_category = extract_explicit_main_category(
+            original_query, df, excluded=excluded_terms
+        )
+
     taxonomy_match = semantic_taxonomy_match(
         query,
         model,
@@ -634,17 +938,48 @@ def parse_query(query, df, model, taxonomy_embeddings, taxonomy_records, taxonom
         taxonomy_records,
         taxonomy_match_threshold=taxonomy_match_threshold,
     )
-    
-    explicit_sub_category = find_value_from_column(query, df, "sub_category")
-    explicit_product_type = find_value_from_column(query, df, "product_type")
+
+    # A taxonomy match that lands on an explicitly rejected category must not
+    # re-introduce the excluded intent through the back door.
+    if taxonomy_match is not None and _is_excluded(taxonomy_match.get("value"), excluded_terms):
+        taxonomy_match = None
+
+    explicit_sub_category = _explicit("sub_category")
+    explicit_product_type = _explicit("product_type")
 
     if " için " in query.lower():
         parts = query.lower().split(" için ", 1)
         if len(parts) == 2:
             y_part = parts[1].strip()
-            y_type = find_value_from_column(y_part, df, "product_type")
+            y_type = find_value_from_column(y_part, df, "product_type", excluded=excluded_terms)
             if y_type:
                 explicit_product_type = y_type
+
+    # Strict "did the user literally name it?" signal (no prefix/için guesses),
+    # used for the explicit-intent lock and downstream pool enforcement.  This
+    # reads the user's ORIGINAL words, never the Ollama-normalized query, so a
+    # normalizer expansion ("kamp için ürün öner" → "... kamp ocağı") cannot
+    # forge an explicit intent and wrongly narrow a broad browse.
+    intent_source = original_query if original_query else query
+
+    def _named(column):
+        return find_named_value(intent_source, df, column, excluded=excluded_terms)
+
+    named_sub_category = _named("sub_category")
+    named_product_type = _named("product_type")
+
+    # ----- Explicit positive intent lock -----
+    # When the user explicitly named a product_type / sub_category / main_category
+    # (even inflected), a modifier-driven taxonomy match (e.g. "kışlık, sıcak
+    # tutan" → sub_category "Mont") must NOT replace that explicit category with
+    # a DIFFERENT one.  Modifiers may only refine ranking within the explicit
+    # pool, never switch it.  A taxonomy match that AGREES with the explicit
+    # intent (e.g. product_type "Abiye" inside the explicit "Elbise" sub) is
+    # kept, so legitimate narrowing still works.
+    taxonomy_match = _lock_explicit_intent(
+        taxonomy_match, df,
+        explicit_main_category, named_sub_category, named_product_type,
+    )
 
     # Yazlık / kışlık gibi ifadeler bazı ürünlerde product_type olabilir,
     # ama ayakkabı gibi kategorilerde mevsim/özellik olarak kalmalıdır.
@@ -667,6 +1002,16 @@ def parse_query(query, df, model, taxonomy_embeddings, taxonomy_records, taxonom
         "features": extract_features(query),
         "contexts": extract_contexts(query),
         "taxonomy_match": taxonomy_match,
+        "excluded_terms": sorted(excluded_terms),
+        # The user-typed positive intent (inflection-aware), captured BEFORE any
+        # taxonomy/alias/context inference fills the fields. Downstream uses this
+        # to enforce the explicit category pool so modifiers/features only refine
+        # ranking inside it and never switch the product type/category.
+        "explicit_intent": {
+            "main_category": explicit_main_category,
+            "sub_category": named_sub_category,
+            "product_type": named_product_type,
+        },
     }
 
     parsed = apply_query_aliases(query, parsed)

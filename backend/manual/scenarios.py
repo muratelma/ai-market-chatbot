@@ -64,6 +64,7 @@ CHECK_SUB_OR_TYPE = "sub_or_type"         # parsed_query sub/product_type == exp
 CHECK_PRICE = "price_honored"             # every product respects the stated price bound
 CHECK_NO_FABRICATION = "no_fabrication"   # products == [] (no invented catalog item)
 CHECK_PRIMARY_FIRST = "primary_first"     # grouped result is primary-first + expected result_grouping
+CHECK_NO_FORBIDDEN_TYPES = "no_forbidden_types"  # no product's sub/type matches forbid_types
 
 
 # ---------------------------------------------------------------------------
@@ -92,6 +93,10 @@ class Scenario:
     # runs with AI_MARKET_GROUPED_RANKING on. Checked by CHECK_PRIMARY_FIRST,
     # which is skipped when the server does not emit grouping fields.
     expect_result_grouping: str | None = None
+    # Category/type substrings that must NOT appear in any returned product's
+    # sub_category or product_type — used for negative constraints ("mont veya
+    # kaban değil"). Checked by CHECK_NO_FORBIDDEN_TYPES.
+    forbid_types: tuple[str, ...] = field(default_factory=tuple)
 
     # Hard pass/fail checks; remaining expectations are warning-only.
     strict: tuple[str, ...] = field(default_factory=tuple)
@@ -234,6 +239,27 @@ ALL_SCENARIOS: tuple[Scenario, ...] = (
         strict=(CHECK_PRODUCTS, CHECK_NO_CLARIFICATION, CHECK_PRIMARY_FIRST),
         notes="Seasonal modifier: kışlık/triko dresses are primary and lead; yazlık "
               "dresses become alternatives. CHECK_PRIMARY_FIRST skipped if grouping off.",
+    ),
+    Scenario(
+        category="Giyim", kind=KIND_FOCUSED,
+        query="Kışlık kadın elbisesi önerir misin? Mont veya kaban değil, elbise arıyorum.",
+        expect_products=True, expect_main_category="Giyim", expect_sub_or_type="Elbise",
+        forbid_types=("Mont", "Kaban"),
+        strict=(CHECK_PRODUCTS, CHECK_MAIN_CATEGORY, CHECK_NO_FORBIDDEN_TYPES),
+        notes="Negative constraint: 'mont/kaban değil' rejects outerwear — the "
+              "explicit positive product (elbise) must win and no Mont/Kaban may "
+              "appear in results. Deterministic via query_parser.extract_excluded_terms.",
+    ),
+    Scenario(
+        category="Giyim", kind=KIND_FOCUSED,
+        query="Kışlık, sıcak tutan ve günlük kullanıma uygun bir kadın elbisesi önerir misin?",
+        expect_products=True, expect_main_category="Giyim", expect_sub_or_type="Elbise",
+        forbid_types=("Mont", "Kaban", "Şişme Mont", "Yağmurluk Mont"),
+        strict=(CHECK_PRODUCTS, CHECK_MAIN_CATEGORY, CHECK_NO_FORBIDDEN_TYPES),
+        notes="Explicit positive intent lock (NO negation): warmth/seasonal "
+              "modifiers ('kışlık', 'sıcak tutan', 'günlük') must NOT switch the "
+              "explicit 'elbise' to Mont/Kaban. Results stay in Giyim › Elbise; "
+              "the inflected 'elbisesi' is detected via contains_term.",
     ),
 
     # ---- 4. Elektronik ----
@@ -473,6 +499,27 @@ ALL_SCENARIOS: tuple[Scenario, ...] = (
     Scenario(
         category="Cross-cutting", kind=KIND_NO_RESULT,
         query="zihin okuma cihazı",
+        expect_products=False,
+        strict=(CHECK_PRODUCTS, CHECK_NO_FABRICATION),
+    ),
+    # Unreal / fantasy items phrased as full purchase sentences. Normalization
+    # must not map these onto real catalog terms (e.g. "saat"/"seyahat"); they
+    # must return no products with the safe no-result message.
+    Scenario(
+        category="Cross-cutting", kind=KIND_NO_RESULT,
+        query="zaman makinesi almak istiyorum",
+        expect_products=False,
+        strict=(CHECK_PRODUCTS, CHECK_NO_FABRICATION),
+    ),
+    Scenario(
+        category="Cross-cutting", kind=KIND_NO_RESULT,
+        query="Mars'a giden roket almak istiyorum",
+        expect_products=False,
+        strict=(CHECK_PRODUCTS, CHECK_NO_FABRICATION),
+    ),
+    Scenario(
+        category="Cross-cutting", kind=KIND_NO_RESULT,
+        query="Görünmezlik pelerini almak istiyorum",
         expect_products=False,
         strict=(CHECK_PRODUCTS, CHECK_NO_FABRICATION),
     ),

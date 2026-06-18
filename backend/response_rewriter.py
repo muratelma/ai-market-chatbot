@@ -24,6 +24,28 @@ from response_planner import ResponsePlan
 logger = logging.getLogger(__name__)
 
 
+# Fixed, safe message for out-of-catalog / unreal-item requests. We deliberately
+# do NOT route no-result through Ollama: with no products to ground it, the
+# rewriter tends to hallucinate (inventing product types, or echoing a wrongly
+# normalized term such as "gizlilik perdesi"). A generic template keeps the
+# reply honest and never fabricates a catalog item.
+NO_RESULT_MESSAGE = (
+    "Bu ürün şu anda katalogda bulunmuyor. "
+    "İsterseniz farklı bir ürün türü veya kategori deneyebilirsiniz."
+)
+
+
+def _strip_markdown_emphasis(text: str) -> str:
+    """Remove Markdown bold/italic markers the chat UI renders verbatim.
+
+    The frontend prints the answer as plain text, so stray ``**`` / ``__`` from
+    either the template or an Ollama rewrite would leak into the UI as literal
+    asterisks. Dropping the markers (keeping the inner words) is safe and
+    idempotent.
+    """
+    return text.replace("**", "").replace("__", "")
+
+
 # ---------------------------------------------------------------------------
 # System prompt
 # ---------------------------------------------------------------------------
@@ -104,6 +126,11 @@ def rewrite_response(
         ``(answer_text, ollama_used)`` — the answer string and whether
         Ollama was actually used or we fell back to the template.
     """
+    # No-result is answered with a fixed, safe template — never Ollama — so the
+    # reply cannot invent a product or echo a hallucinated normalized term.
+    if result_status == "no_result":
+        return NO_RESULT_MESSAGE, False
+
     # Build context for the rewriter
     top_summaries = []
     for p in products[:5]:
@@ -196,7 +223,7 @@ def rewrite_response(
     data = call_ollama(prompt, REWRITER_SYSTEM_PROMPT)
 
     if data is not None:
-        assistant_text = str(data.get("assistant_text", "")).strip()
+        assistant_text = _strip_markdown_emphasis(str(data.get("assistant_text", "")).strip())
         if assistant_text:
             # Enforce safeguard: If should_ask_followup is true, the follow-up question must be in the assistant_text.
             if response_plan and response_plan.should_ask_followup and clarification_question:
@@ -226,9 +253,8 @@ def rewrite_response(
         return clarification_question, False
 
     if result_status == "no_result":
-        return (
-            "Maalesef aradığınız kriterlere uygun bir ürün bulunamadı. "
-            "Farklı kelimelerle tekrar deneyebilirsiniz."
-        ), False
+        # Defensive: the early no_result short-circuit above already covers this,
+        # but keep one source of truth for the message.
+        return NO_RESULT_MESSAGE, False
 
     return build_answer(parsed_query, len(products)), False

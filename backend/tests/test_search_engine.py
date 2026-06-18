@@ -7,7 +7,7 @@ category). No embeddings/model/DB involved.
 """
 import pandas as pd
 
-from search_engine import apply_filters
+from search_engine import apply_filters, filter_excluded
 
 
 def _catalog():
@@ -62,3 +62,41 @@ def test_without_enforce_falls_back_to_broader_pool():
     # to the broader (price-filtered) base pool rather than the 3 Elbise rows.
     default = apply_filters(df, parsed, enforce_explicit_category=False)
     assert len(default) == len(df)
+
+
+def test_enforce_explicit_category_keeps_pool_in_sub():
+    df = _catalog()
+    # Explicit dress intent with a small pool: enforcement must keep the pool in
+    # sub_category "Elbise" instead of widening to the whole catalog (which would
+    # let warmth-driven Mont/Kaban back in).
+    parsed = _parsed(main_category="Giyim", sub_category="Elbise")
+    out = apply_filters(df, parsed, enforce_explicit_category=True)
+    assert set(out["sub_category"]) == {"Elbise"}
+    assert "Mont" not in set(out["sub_category"])
+
+
+def test_filter_excluded_removes_rejected_subcategory():
+    df = _catalog()
+    out = filter_excluded(df, {"mont"})
+    # All 9 Mont sub_category rows dropped; the 3 Elbise rows remain.
+    assert set(out["sub_category"]) == {"Elbise"}
+    assert len(out) == 3
+
+
+def test_filter_excluded_safety_net_keeps_pool_when_exclusion_empties_it():
+    df = _catalog()
+    # Excluding every category present would empty the pool — the safety net
+    # returns the original frame instead of zero results.
+    out = filter_excluded(df, {"elbise", "mont"})
+    assert len(out) == len(df)
+
+
+def test_apply_filters_drops_excluded_before_broad_fallback():
+    df = _catalog()
+    # The negative constraint must hold even when the broad fallback would
+    # otherwise widen back to the whole catalog: no Mont may survive.
+    parsed = _parsed(main_category="Giyim", sub_category="Elbise",
+                     excluded_terms=["mont"])
+    out = apply_filters(df, parsed, enforce_explicit_category=False)
+    assert "Mont" not in set(out["product_type"])
+    assert set(out["sub_category"]) == {"Elbise"}

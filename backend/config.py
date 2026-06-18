@@ -77,15 +77,15 @@ TAXONOMY_MATCH_THRESHOLD = _get_env_float("AI_MARKET_TAXONOMY_MATCH_THRESHOLD", 
 # DataFrame or its embeddings).
 RANKING_V2_ENABLED = _get_env_str("AI_MARKET_RANKING_V2", "true").lower() in ("true", "1", "yes")
 
-# ---- Primary/alternative grouping (Stage 4 — debug-only) ----
-# When enabled, the ranking_diagnostics debug field additionally labels each
-# result with a match_group ("primary" | "alternative") derived from the V2
-# directness tier, plus a result_grouping ("primary_alternative" | "flat").
-# This is OBSERVE-ONLY at this stage: it changes nothing in the products list,
-# the response contract, or ordering — it only enriches the debug field so the
-# classification can be validated before it drives the API/UI (Stages 5-6).
-# Disabled by default. See ranking_core.determine_result_grouping.
-GROUPED_RANKING_ENABLED = _get_env_str("AI_MARKET_GROUPED_RANKING", "false").lower() in ("true", "1", "yes")
+# ---- Primary/alternative grouping ----
+# When enabled, each result is labeled with a match_group ("primary" |
+# "alternative") derived from the V2 directness tier, plus a result_grouping
+# ("primary_alternative" | "flat"); the response also exposes grouped views
+# (primary_products / alternative_products).  The products list itself stays
+# primary-first and backward-compatible, so older clients are unaffected.
+# Enabled by default now that Stage 6-8 validation passed; set false to fall
+# back to the ungrouped response. See ranking_core.determine_result_grouping.
+GROUPED_RANKING_ENABLED = _get_env_str("AI_MARKET_GROUPED_RANKING", "true").lower() in ("true", "1", "yes")
 
 # ---- Product catalog source ----
 # PostgreSQL is the ONLY runtime product source (there is no CSV fallback).

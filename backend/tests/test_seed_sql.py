@@ -2,7 +2,7 @@
 
 seed_products.sql is the source of truth for the product catalog. These tests
 guard its reproducibility contract: it must recreate the table from zero and
-keep explicit ids 1..1000 in order so the embedding/ORDER BY id contract holds.
+keep explicit ids 1..N in order so the embedding/ORDER BY id contract holds.
 """
 import re
 from pathlib import Path
@@ -12,7 +12,10 @@ from data_loader import REQUIRED_PRODUCT_COLUMNS
 SEED_PATH = Path(__file__).resolve().parents[1] / "db" / "seed_products.sql"
 SEED_SQL = SEED_PATH.read_text(encoding="utf-8")
 
-EXPECTED_ROWS = 1000
+# Catalog size. Kept as an explicit lower-bound-friendly constant: the contract
+# is contiguous ids 1..N, so this must equal the current row count exactly.
+# Bumped from 1000 to 1008 by the targeted catalog enrichment (ids 1001-1008).
+EXPECTED_ROWS = 1008
 
 
 def test_seed_file_exists():

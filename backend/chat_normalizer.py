@@ -60,6 +60,7 @@ Katalogda şu alanlar var: product_name, description, main_category, sub_categor
 7. Eğer mesaj bir ürün aramasıyla hiç ilgili değilse (selamlama, sohbet vb.), orijinal metni aynen döndür ve confidence 1.0 yap.
 8. Eğer kullanıcı spesifik bir ürün tipi (örn: saç kremi, serum, maske, vb.) belirtmişse, O ÜRÜN TİPİNİ KORU. Asla şampuan ile değiştirme veya şampuan ekleme.
 9. Kullanıcı sadece bir problemden bahsedip "ürün", "ne kullanabilirim" veya "öner" diyorsa, sorguyu spesifik bir ürün tipine (örn. şampuan) daraltma. Genel bir ürün araması olarak (örn. "saç bakım ürünü") bırak.
+10. Gerçekte var olmayan, hayali veya fantastik ürünler (örn. "zaman makinesi", "ışınlanma cihazı", "uçan halı", "görünmezlik pelerini", "Mars'a giden roket") için ASLA gerçek bir kategori, ürün tipi veya benzer bir ürün UYDURMA. Bu durumda orijinal metni aynen döndür, confidence değerini 0.3'ten düşük ver ve needs_clarification=true yap. Var olmayan ürünü "saat", "seyahat", "perde" gibi gerçek ürünlere bağlama.
 
 ## Normalleştirme örnekleri
 - "papuç lazım" → "ayakkabı"
@@ -82,6 +83,9 @@ Katalogda şu alanlar var: product_name, description, main_category, sub_categor
 - "saç dökülmesi için ne kullanabilirim" → "saç dökülmesi için saç bakım ürünü"
 - "saçım hemen yağlanıyor" → "yağlı saç için şampuan veya bakım ürünü"
 - "kepek var" → "kepek karşıtı şampuan veya bakım ürünü"
+- "zaman makinesi almak istiyorum" → "zaman makinesi almak istiyorum"  (hayali ürün: aynen bırak, confidence düşük, needs_clarification=true)
+- "Mars'a giden roket almak istiyorum" → "Mars'a giden roket almak istiyorum"  (hayali ürün: aynen bırak)
+- "görünmezlik pelerini almak istiyorum" → "görünmezlik pelerini almak istiyorum"  (hayali ürün: aynen bırak)
 
 ## Yanıt formatı
 Yalnızca geçerli JSON döndür, başka bir şey yazma.

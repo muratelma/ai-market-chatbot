@@ -2,6 +2,34 @@ import numpy as np
 import pandas as pd
 import faiss
 
+from query_parser import normalize_text_for_match
+
+
+def filter_excluded(df, excluded_terms):
+    """Drop rows whose main/sub/product category was explicitly rejected.
+
+    ``excluded_terms`` is the set of normalized catalog values produced by
+    ``query_parser.extract_excluded_terms`` (e.g. {"mont", "kaban"}).  A row is
+    removed when any of its main_category / sub_category / product_type matches
+    a rejected term.  As a safety net the original frame is returned unchanged
+    if the exclusion would empty the pool — we never want a clear negative
+    constraint to leave the user with zero results.
+    """
+    if not excluded_terms or df.empty:
+        return df
+
+    excluded = set(excluded_terms)
+
+    def _keep(row):
+        for column in ("main_category", "sub_category", "product_type"):
+            if normalize_text_for_match(row.get(column, "")) in excluded:
+                return False
+        return True
+
+    mask = df.apply(_keep, axis=1)
+    kept = df[mask]
+    return kept if not kept.empty else df
+
 
 def create_search_text(df):
     texts = []
@@ -63,6 +91,11 @@ def row_contains_any_feature(row, features):
 
 def apply_filters(df, parsed_query, enforce_explicit_category=False):
     filtered = df.copy()
+
+    # 0. Honor explicit negative constraints ("mont veya kaban değil"): remove
+    # rejected categories/types before any other filtering so they cannot
+    # resurface via the broad fallback pool below.
+    filtered = filter_excluded(filtered, parsed_query.get("excluded_terms"))
 
     # 1. Price is the ONLY absolute strict filter
     if parsed_query["min_price"] is not None:
@@ -369,14 +402,16 @@ def build_answer(parsed_query, product_count):
     min_price = parsed_query.get("min_price")
     max_price = parsed_query.get("max_price")
 
-    # Describe what we found
+    # Describe what we found.  Plain text only — no Markdown emphasis (`**`):
+    # the chatbot renders these strings verbatim, so raw markers would leak
+    # into the UI as literal asterisks.
     if product_type:
-        parts.append(f"**{product_type}** kategorisinde")
+        parts.append(f"{product_type} kategorisinde")
     elif main_category:
-        parts.append(f"**{main_category}** bölümünde")
+        parts.append(f"{main_category} bölümünde")
 
     if target_group:
-        parts.append(f"**{target_group}** için")
+        parts.append(f"{target_group} için")
 
     if min_price is not None and max_price is not None:
         parts.append(f"₺{min_price} - ₺{max_price} fiyat aralığında")
