@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from query_parser import normalize_text_for_match, contains_phrase
+from query_parser import normalize_text_for_match, contains_phrase, product_type_overlap
 from response_planner import MODE_FOCUSED_SEARCH, MODE_BROAD_SEARCH
 from search_engine import diversify_results
 
@@ -169,7 +169,9 @@ def product_type_match(parsed_query, row):
         return "none"
     if parsed_pt_lower == row_pt_lower:
         return "exact"
-    if parsed_pt_lower in row_pt_lower or row_pt_lower in parsed_pt_lower:
+    # Word-boundary overlap only: keeps "serum" ↔ "Saç Serumu" but rejects the
+    # spurious "Bot" ⊂ "Robot Süpürge" mid-word substring.
+    if product_type_overlap(parsed_pt_lower, row_pt_lower):
         return "substring"
     return "none"
 
@@ -302,6 +304,24 @@ def finalize_ranking_v2(result_df, parsed_query, response_plan, query, top_k):
         assign_directness_tier(parsed_query, row, user_problem, modifiers)[0]
         for _, row in work.iterrows()
     ]
+
+    # When a DIRECT match anchors the result, drop CROSS-main-category TIER_OTHER
+    # rows.  These reach the top-k only because the base_pool fallback backfills a
+    # thin candidate set and semantic similarity grabs a loosely-worded outsider
+    # (e.g. a "Mutfak Robotu" for a "Robot Süpürge" query).  They are neither the
+    # answer nor a same-area sibling, so showing them as "İlgili alternatifler" is
+    # misleading.  Same-category TIER_OTHER items are kept — they are legitimate
+    # demoted siblings (Kamp Mutfak Seti next to Kamp Ocağı; an opposite "kuru
+    # şampuan" next to "yağlı şampuan").  If nothing is DIRECT we keep everything
+    # so a weak query still returns results instead of going empty.
+    if (work["_tier"] == TIER_DIRECT).any():
+        direct_mains = set(
+            work.loc[work["_tier"] == TIER_DIRECT, "main_category"]
+            .astype(str).str.lower()
+        )
+        is_other = work["_tier"] == TIER_OTHER
+        cross_category = ~work["main_category"].astype(str).str.lower().isin(direct_mains)
+        work = work[~(is_other & cross_category)]
 
     if regime == REGIME_PROBLEM_BROAD:
         direct = (

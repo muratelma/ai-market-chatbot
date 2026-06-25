@@ -283,6 +283,31 @@ def search_products(req: QueryRequest):
     # ---- 2. Resolve follow-ups ----
     effective_query = resolve_follow_up(original_query, session)
 
+    # ---- 2b. Guard against follow-up contamination ----
+    # ``resolve_follow_up`` merges a short message with the previous query
+    # whenever a clarification is pending.  That is right for a terse ANSWER to
+    # the clarification ("erkek", "1500 altı") but wrong when the short message
+    # is itself a COMPLETE new product request ("evi kendi kendine süpürecek bir
+    # şey").  Merging then drags stale category words from the previous turn into
+    # the new search — e.g. a leftover "ayakkabı" flips the whole intent to
+    # Ayakkabı/Bot.  If the standalone new message already parses to its own
+    # category/product-type signal, it is a fresh search, so we drop the merge.
+    if effective_query != original_query:
+        standalone_parsed = parse_query(
+            original_query,
+            df,
+            model,
+            taxonomy_embeddings,
+            taxonomy_records,
+            taxonomy_match_threshold=TAXONOMY_MATCH_THRESHOLD,
+            original_query=original_query,
+        )
+        if any(
+            standalone_parsed.get(field)
+            for field in ("main_category", "sub_category", "product_type")
+        ):
+            effective_query = original_query
+
     # ---- 3. Ollama query normalization (with fallback) ----
     normalization = normalize_query(effective_query)
     search_query = normalization.normalized_query

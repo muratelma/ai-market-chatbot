@@ -223,6 +223,36 @@ Akış (Bölüm 3'teki katmanların sıralı uygulanışı):
 9. **Filtre + semantik arama** → 10. **Ranking V2 / legacy diversify** → 11. **Diagnostics**.
 12. **Yanıt yaz** (Ollama → şablon fallback) → 13. **Session güncelle + JSON döndür**.
 
+### Deterministik niyet kısayolları (fast-path) ve koruma katmanları
+
+Uzun, doğal-dil sorgularında bazı kritik niyetler hem **Ollama'ya bağımlı kalmadan**
+hem de yanlış semantik eşleşmelere düşmeden garanti edilir. `query_parser.parse_query`,
+taxonomy eşleşmesi çalışmadan **önce**, kullanıcının kendi kelimelerinden (regex,
+ASCII-katlamalı) niyet tespiti yapıp doğru kategoriye sabitler. Hepsi Ollama kapalıyken
+de çalışır; ilgisiz bağlamlar (ör. araç, bebek) dışlanır.
+
+| Detektör | Tetikleyen örnek | Sonuç |
+| --- | --- | --- |
+| `is_power_depletion_complaint` | "şarjım dışarıda bitiyor", "pilim çabuk bitiyor" | Elektronik › Powerbank (araç bağlamı hariç) |
+| `is_hair_care_request` | "saçlarım dökülüyor", "saç bakım ürünü" | Kişisel Bakım › Saç Bakımı (bebek hariç) |
+| `is_skin_care_request` | "cildim kuru, nemlendirici" | Kişisel Bakım › Cilt Bakımı |
+| `is_camp_cooking_request` | "kampta yemek/kahve pişireceğim" | Kamp › Pişirme |
+| `is_yoga_mat_request` | "yoga/pilates için minder" | Spor › Yoga › Yoga Matı |
+| `has_child_shopper_context` | "oğlum yeni yürümeye başladı, ayakkabı" | `target_group = Çocuk` |
+
+İki ek koruma:
+
+- **Takip-mesajı kontaminasyon guard'ı** (`main.py`): bir netleştirme beklenirken gelen
+  kısa mesaj **kendi başına** bir kategori sinyali taşıyorsa, önceki sorguyla birleştirme
+  iptal edilir — böylece bayat bir kelime (ör. "ayakkabı") yeni aramayı saptırmaz.
+- **Kelime-sınırı duyarlı `product_type` eşleşmesi** (`query_parser.product_type_overlap`):
+  ürün tipleri yalnızca **kelime sınırında** örtüşürse "ilgili" sayılır. Bu, "serum" ↔
+  "Saç Serumu" eşleşmesini korurken, naive alt-dize hatasını ("Bot" ⊂ "Ro**bot** Süpürge")
+  engeller. Hem skorlamada (`search_engine`) hem de Ranking V2 tier'ında kullanılır.
+
+Bu kuralların regresyonunu **18 uzun-sorgu** içeren bir gold set ölçer
+(`eval/long_queries.json`, Bölüm 9).
+
 ---
 
 ## 5. Frontend Akışı
@@ -340,6 +370,13 @@ mevsim/malzeme gibi bir modifier) iki gruba ayrılabilir:
 
 - **primary** ("En uygun ürünler"): DIRECT tier ürünler,
 - **alternative** ("İlgili alternatifler"): geri kalanlar.
+
+**Çapraz-kategori gürültü filtresi:** DIRECT bir eşleşme varken, **farklı ana
+kategorideki** TIER_OTHER ürünler sonuçtan düşürülür. Bunlar yalnızca `base_pool`
+fallback'i aday havuzunu doldururken semantik benzerlikle sızan dış ürünlerdir
+(ör. bir "Robot Süpürge" sorgusunda "Mutfak Robotu"). Aynı kategorideki demote edilmiş
+kardeşler (ör. "Kamp Ocağı" yanında "Kamp Mutfak Seti") korunur; böylece alternatifler
+hep anlamlı kalır.
 
 Saf kategori gezintisinde (örn. "ayakkabı öner") ayıracak eksen olmadığından sonuç **flat**
 kalır. `AI_MARKET_GROUPED_RANKING` flag'i ile kontrol edilir (canlı doğrulama sonrası
@@ -477,11 +514,15 @@ koşulup JSON çıktıları karşılaştırılır.
 ```bash
 ./.venv/bin/python eval/run_eval.py --show-failures --output-json eval/results/baseline.json
 ./.venv/bin/python eval/run_stress_eval.py
+./.venv/bin/python eval/run_eval.py --gold-set eval/long_queries.json   # uzun sorgular
 ```
 
 - **Gold set** (`gold_queries.json`, **46 sorgu**): beklenen intent/kategori/ürün tipi veya
   `expects_clarification` / `expects_empty_result` etiketleriyle relevance ölçümü.
 - **Stress set** (şu an **100 sorgu**): geniş sorgu yelpazesiyle dayanıklılık ölçümü.
+- **Uzun sorgu seti** (`long_queries.json`, **18 sorgu**): tek cümlede birden çok bağlam
+  taşıyan doğal-dil sorgularında (Bölüm 4'teki deterministik kısayolların) regresyonunu
+  ölçer. Mevcut Top-1 / Top-3 = **%100**.
 
 ---
 
