@@ -1,0 +1,92 @@
+[
+  {
+    "id": "LQ01_powerbank",
+    "query": "Geçen hafta dışarıda yürürken telefonumun şarjı sürekli bittiği için çok zor durumda kaldım, yanımda taşıyabileceğim güçlü bir şey önerir misin",
+    "expected": { "main_category": "Elektronik", "product_types_any": ["Powerbank"] }
+  },
+  {
+    "id": "LQ02_kamp_pisirme",
+    "query": "Kışın dağda kamp yaparken sabahları sıcak bir kahve ya da çorba hazırlayabilmem için yanımda götürebileceğim pratik bir pişirme çözümü arıyorum",
+    "expected": { "main_category": "Kamp", "product_types_any": ["Kamp Ocağı", "Kahve Seti", "Kamp Mutfak Seti", "Tencere Seti", "Bulaşık Seti"] }
+  },
+  {
+    "id": "LQ03_robot_supurge",
+    "query": "Annem yaşlı olduğu için evi kendi başına temizlemekte zorlanıyor, onun yerine zemini otomatik süpürüp paspaslayacak akıllı bir cihaz lazım",
+    "expected": { "product_types_any": ["Robot Süpürge"] }
+  },
+  {
+    "id": "LQ04_sac_dokulmesi",
+    "query": "Saçlarım son zamanlarda aşırı dökülüyor ve inceldi, bunu durduracak ya da en azından güçlendirecek günlük kullanabileceğim etkili bir bakım ürünü önerir misin",
+    "expected": { "main_category": "Kişisel Bakım", "sub_category": "Saç Bakımı" }
+  },
+  {
+    "id": "LQ05_cocuk_ayakkabi",
+    "query": "Oğlum yeni yürümeye başladı ve sürekli düşüyor, ayağını koruyacak ama rahat da olan kaymaz tabanlı bir ayakkabı arıyorum",
+    "expected": { "main_category": "Ayakkabı", "target_group": "Çocuk" }
+  },
+  {
+    "id": "LQ06_ergonomik_mouse",
+    "query": "Ofiste bütün gün bilgisayar başında oturduğum için bileğim ağrıyor, uzun süre kullanımda elimi yormayan ergonomik bir mouse istiyorum",
+    "expected": { "main_category": "Elektronik", "product_types_any": ["Mouse"] }
+  },
+  {
+    "id": "LQ07_yagli_kepekli_sampuan",
+    "query": "Yağlı ve kepekli saç tipim var, hem yağlanmayı azaltan hem de kepeğe iyi gelen bir şampuan tavsiye eder misin",
+    "expected": { "sub_category": "Saç Bakımı", "product_types_any": ["Şampuan"] }
+  },
+  {
+    "id": "LQ08_arac_sarj",
+    "query": "Uzun araba yolculuklarında çocuklar arka koltukta tablet izlerken telefonum da şarjda kalsın istiyorum, arabada birden fazla cihazı aynı anda şarj edecek bir çözüm lazım",
+    "expected": { "main_category": "Otomotiv", "product_types_any": ["Araç Şarj Cihazı"] }
+  },
+  {
+    "id": "LQ09_yoga_mati",
+    "query": "Spor salonuna yeni başladım, yoga ve pilates yaparken yere serebileceğim kaymayan kalın bir minder arıyorum",
+    "expected": { "product_types_any": ["Yoga Matı"] }
+  },
+  {
+    "id": "LQ10_tava_seti",
+    "query": "Mutfakta yemek yaparken yapışmayan ve kolay temizlenen, her boy için kullanabileceğim sağlam bir tava seti istiyorum",
+    "expected": { "main_category": "Mutfak", "product_types_any": ["Tava Seti"] }
+  },
+  {
+    "id": "LQ11_kislik_bot",
+    "query": "Kışın çok üşüyorum, dışarıda yürüyüş yaparken ayaklarımı sıcak ve kuru tutacak su geçirmeyen bir bot önerir misin",
+    "expected": { "main_category": "Ayakkabı", "product_types_any": ["Bot"] }
+  },
+  {
+    "id": "LQ12_bebek_sampuani",
+    "query": "Bebeğimin cildi çok hassas, banyo sırasında gözünü yakmayan doğal içerikli bir bebek şampuanı arıyorum",
+    "expected": { "main_category": "Anne & Bebek", "product_types_any": ["Bebek Şampuanı"] }
+  },
+  {
+    "id": "LQ13_gurultu_onleyici_kulaklik",
+    "query": "Sık sık uçağa biniyorum ve motor sesinden çok rahatsız oluyorum, etrafımdaki gürültüyü kesen kablosuz bir kulaklık arıyorum",
+    "expected": { "main_category": "Elektronik", "product_types_any": ["Kulaklık"] }
+  },
+  {
+    "id": "LQ14_cilt_nemlendirici",
+    "query": "Cildim çok kuru ve kışın daha da kötüleşiyor, yüzümü derinlemesine nemlendirecek günlük kullanabileceğim bir bakım ürünü önerir misin",
+    "expected": { "sub_category": "Cilt Bakımı", "product_types_any": ["Cilt Serumu", "Nemlendirici"] }
+  },
+  {
+    "id": "LQ15_erkek_kislik_mont",
+    "query": "Hava iyice soğudu, yağmurlu ve rüzgarlı günlerde beni sıcak tutacak su geçirmez kalın bir kışlık erkek montu arıyorum",
+    "expected": { "main_category": "Giyim", "sub_category": "Mont" }
+  },
+  {
+    "id": "LQ16_elektrikli_dis_fircasi",
+    "query": "Diş hekimim elektrikli diş fırçası kullanmamı önerdi, şarjlı ve hassas diş etleri için uygun bir model lazım",
+    "expected": { "sub_category": "Ağız Bakımı", "product_types_any": ["Diş Fırçası"] }
+  },
+  {
+    "id": "LQ17_termos",
+    "query": "Sabah işe giderken yanıma aldığım çayı ya da kahveyi öğlene kadar sıcacık tutacak, sızdırmaz sağlam bir termos arıyorum",
+    "expected": { "product_types_any": ["Termos"] }
+  },
+  {
+    "id": "LQ18_cadir",
+    "query": "Ailecek hafta sonu doğada kamp yapmayı planlıyoruz, dört kişinin rahatça sığacağı su geçirmez ve kurulumu kolay bir çadır lazım",
+    "expected": { "main_category": "Kamp", "sub_category": "Çadır" }
+  }
+]
