@@ -397,10 +397,11 @@ amaçlı** bir debug alanında raporlar; sıralamayı/ürünleri değiştirmez.
 ```
 bitirmeodevi/
 ├── README.md                   # Kurulum + çalıştırma rehberi (clone → çalıştır)
+├── PROJECT_OVERVIEW.md         # Güncel genel bakış (tek otoriter doküman) — kök dizinde
+├── SUNUM_TEKNIK_REHBER.md      # Sunum savunması: her sınıf + FAISS + sorgu yol haritası + soru-cevap
+├── SUNUM_SORGULARI.md          # Sunum için test edilmiş örnek sorgular (senaryo bazlı)
+├── RUNNING_TESTS.md            # Test/eval çalıştırma komutları
 ├── docker-compose.yml          # PostgreSQL (5433) + pgAdmin (5050) servisleri
-├── docs/                       # Proje dokümantasyonu (bu dosya) + arşiv
-│   ├── PROJECT_OVERVIEW.md      # Güncel genel bakış (tek otoriter doküman)
-│   └── archive/                # Legacy/geçmiş dokümanlar (CSV dönemi, migrasyon planı...)
 │
 ├── backend/                    # FastAPI tabanlı arama/öneri servisi
 │   ├── main.py                 # FastAPI giriş noktası; /search akışı + açılışta Ollama warm-up

@@ -267,6 +267,16 @@ def assign_directness_tier(parsed_query, row, user_problem, query_modifiers):
             return TIER_RELATED, "same_category"
         return TIER_OTHER, "other"
 
+    # Context 3b — explicit sub_category only, no product_type/problem/modifiers.
+    # "kamp için yemek yapacak bir şey lazım" → sub=Pişirme, type=None: products
+    # whose sub_category matches are a direct answer; same-main-only are related.
+    if parsed_query.get("sub_category") is not None:
+        if sub_match:
+            return TIER_DIRECT, "sub_category_match"
+        if main_match:
+            return TIER_RELATED, "same_main_category"
+        return TIER_OTHER, "other"
+
     # Context 4 — pure browse: no discriminating signal, defer to score order.
     return TIER_RELATED, "browse"
 
@@ -358,6 +368,7 @@ def has_explicit_axis(parsed_query, user_problem, query_modifiers):
     return bool(
         user_problem
         or parsed_query.get("product_type") is not None
+        or parsed_query.get("sub_category") is not None
         or query_modifiers
     )
 
