@@ -121,8 +121,17 @@ OLLAMA_CONFIDENCE_THRESHOLD = _get_env_float(
 # OLLAMA_TIMEOUT_SECONDS and would otherwise fall back to a template answer.
 OLLAMA_WARMUP = _get_env_str("OLLAMA_WARMUP", "true").lower() in ("true", "1", "yes")
 
-# How long Ollama keeps the model resident after a request (any value its API
-# accepts: "10m", "1h", "-1" for forever). Longer keeps the model warm between
-# queries so it is not re-loaded after an idle gap.
-OLLAMA_KEEP_ALIVE = _get_env_str("OLLAMA_KEEP_ALIVE", "10m")
+# How long Ollama keeps the model resident after a request. Longer keeps the
+# model warm between queries so it is not re-loaded after an idle gap.
+# Ollama's API accepts EITHER a duration string with a unit ("10m", "1h") OR a
+# bare integer number of seconds (0 = unload now, -1 = keep forever). A bare
+# integer must be sent as a JSON number: the string "-1" is rejected with
+# {"error":"time: missing unit in duration \"-1\""}, which fails every call and
+# silently drops the system to template fallback. So coerce integer-looking
+# values to int; leave unit strings ("10m") as-is.
+_keep_alive_raw = _get_env_str("OLLAMA_KEEP_ALIVE", "10m")
+try:
+    OLLAMA_KEEP_ALIVE: str | int = int(_keep_alive_raw)
+except ValueError:
+    OLLAMA_KEEP_ALIVE = _keep_alive_raw
 

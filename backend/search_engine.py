@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import faiss
 
-from query_parser import normalize_text_for_match
+from query_parser import normalize_text_for_match, product_type_overlap
 
 
 def filter_excluded(df, excluded_terms):
@@ -262,8 +262,10 @@ def semantic_search(query, candidate_df, model, product_embeddings, parsed_query
             elif is_explicit:
                 # Dumb parser, but highly specific explicit match
                 bonus += explicit_bonus
-            elif parsed_pt_lower in row_pt_lower or row_pt_lower in parsed_pt_lower:
-                # Special cases (e.g. Kuru Şampuan vs Şampuan)
+            elif product_type_overlap(parsed_pt_lower, row_pt_lower):
+                # Word-boundary overlap only — "Kuru Şampuan" vs "Şampuan" still
+                # matches, but "Bot" no longer matches "Robot Süpürge" mid-word
+                # (which used to give boots a bonus instead of a penalty).
                 if parsed_pt_lower == "şampuan" and "kuru şampuan" in row_pt_lower and "kuru" not in query_lower and "susuz" not in query_lower and "su gerektir" not in query_lower:
                     penalty += 0.15
                 else:

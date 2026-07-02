@@ -165,9 +165,16 @@ def warm_up_model() -> bool:
         return False
 
     url = f"{OLLAMA_BASE_URL.rstrip('/')}/api/generate"
+    # This call goes straight to Ollama's /api/generate — it does NOT pass through
+    # the /search pipeline, so the greeting short-circuit (which skips Ollama for
+    # "merhaba") never applies here. We still use a short product-style prompt
+    # instead of a greeting so the warm-up represents the real first-query
+    # workload (Turkish e-commerce text) and to avoid confusion with the
+    # rule-based greeting handling. num_predict=1 keeps it tiny; the point is only
+    # to resident-load the model weights into VRAM.
     payload = {
         "model": OLLAMA_MODEL,
-        "prompt": "merhaba",
+        "prompt": "kadın spor ayakkabı öner",
         "stream": False,
         "keep_alive": OLLAMA_KEEP_ALIVE,
         "options": {"num_predict": 1},

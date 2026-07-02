@@ -108,6 +108,23 @@ QUERY_ALIASES = [
             "product_type": "Araç Şarj Cihazı",
         },
     },
+    # Power bank / portable charger.  The word "şarj" semantically attracts the
+    # many car chargers ("Araç Şarj Cihazı"), so an explicit power-bank request —
+    # or the canonical implicit complaint "şarjım dışarıda bitiyor" once the
+    # normalizer expands it — must pin deterministically to the Powerbank
+    # product_type.  This keeps the result correct even with Ollama disabled.
+    # Sub_category is intentionally left unset: power banks live under both
+    # "Telefon Aksesuarı" and "Aksesuar", so we constrain only main_category.
+    {
+        "keywords": ["powerbank", "power bank", "taşınabilir şarj", "tasinabilir şarj",
+                     "taşınabilir şarj cihazı", "taşınabilir şarj aleti",
+                     "harici batarya", "harici pil", "yedek batarya",
+                     "telefon için taşınabilir şarj"],
+        "fields": {
+            "main_category": "Elektronik",
+            "product_type": "Powerbank",
+        },
+    },
     {
         "keywords": ["dekoratif lamba", "dekoratif ışık", "dekoratif isik"],
         "fields": {
@@ -119,7 +136,10 @@ QUERY_ALIASES = [
     # Cooking in camp context
     {
         "keywords": ["kamp için yemek yapacak", "kamp yemek yapacak", "kamp için pişirme",
-                     "kamp ocağı", "kamp yemeği için ocak", "kamp yemeği ocak"],
+                     "kamp ocağı", "kamp yemeği için ocak", "kamp yemeği ocak",
+                     "kamp yaparken yemek", "kampta yemek", "kamp için yemek",
+                     "kamp yemeği hazırlamak", "kampta yemek yapmak",
+                     "kamp için yemek hazırlamak"],
         "fields": {
             "main_category": "Kamp",
             "sub_category": "Pişirme",
@@ -249,6 +269,23 @@ QUERY_ALIASES = [
             "product_type": "Saç Serumu",
         },
     },
+    # Hair-loss / general hair-care intent.  Without this, "bakım" matches the
+    # Anne & Bebek › Bakım sub-category and "saç" matches baby hair brushes, so a
+    # hair-loss request silently drifts to baby products.  Pin the category to
+    # Kişisel Bakım › Saç Bakımı but leave product_type unset, so semantic search
+    # still picks the right form (şampuan / serum / losyon) inside the pool.
+    # Listed AFTER the hair-serum alias so an explicit "saç serumu" keeps its
+    # more specific product_type.
+    {
+        "keywords": ["saç dökülmesi", "sac dokulmesi", "saç dökülme", "saç dökme",
+                     "saç dökülmesine karşı", "dökülme karşıtı", "dökülmeye karşı",
+                     "saç bakımı", "sac bakimi", "saç bakım", "saç bakım ürünü",
+                     "saç güçlendirici", "saç güçlendiren", "kepek"],
+        "fields": {
+            "main_category": "Kişisel Bakım",
+            "sub_category": "Saç Bakımı",
+        },
+    },
 ]
 
 def normalize_text_for_match(text):
@@ -310,6 +347,27 @@ def _word_matches_term(word, term):
     return False
 
 
+def product_type_overlap(a, b):
+    """True when product_types ``a`` and ``b`` overlap at a WORD boundary.
+
+    The catalog matches a shorter product_type inside a longer one for recall
+    ("serum" ↔ "Saç Serumu", "şampuan" ↔ "Kuru Şampuan").  A naive ``in`` check,
+    however, also fires on mid-word character runs — most damagingly "Bot" ⊂
+    "Ro**bot** Süpürge", which makes boots look related to a robot vacuum.  We
+    require the shorter type to begin at a word boundary in the longer one, which
+    keeps the legitimate stem/prefix overlaps and rejects the spurious ones.
+    \\b is Unicode-aware, so Turkish letters (ş, ı, ç …) bound correctly.
+    """
+    a = str(a).lower().strip()
+    b = str(b).lower().strip()
+    if not a or not b:
+        return False
+    if a == b:
+        return True
+    shorter, longer = (a, b) if len(a) <= len(b) else (b, a)
+    return re.search(r"\b" + re.escape(shorter), longer) is not None
+
+
 def contains_term(text, term):
     """Whole-word OR inflection-aware membership of ``term`` in ``text``.
 
@@ -327,6 +385,147 @@ def contains_term(text, term):
         _word_matches_term(word, term_norm)
         for word in normalize_text_for_match(text).split()
     )
+
+
+# Implicit charge-depletion complaint → power bank.  A phrase like "şarjım
+# dışarıda bitiyor" / "pilim çabuk bitiyor" is an implicit power-bank request,
+# but it semantically taxonomy-matches "Araç Şarj Cihazı" (both involve "şarj"),
+# so without a deterministic rule the user gets car chargers.  We detect the
+# depletion pattern (a charge noun + a "running out" verb) from the user's
+# literal words and route it to Powerbank — independent of the Ollama
+# normalizer.  Genuine in-car charging ("araç/araba") is excluded so explicit
+# car-charger requests are preserved.  Text is ASCII-folded first (ş→s, ı→i…).
+_POWER_COMPLAINT_CHARGE = re.compile(r"\b(sarj|pil|batarya)\w*")
+_POWER_COMPLAINT_DEPLETE = re.compile(r"\b(bit|tuken|azal|dayanm|yetm)\w*")
+_POWER_COMPLAINT_CAR = re.compile(r"\b(arac|araba|otomobil)\w*")
+
+
+def is_power_depletion_complaint(query):
+    """True for "şarjım/pilim/bataryam bitiyor" complaints (not car-charging)."""
+    if not query:
+        return False
+    folded = normalize_text_for_match(query)
+    if _POWER_COMPLAINT_CAR.search(folded):
+        return False
+    return bool(
+        _POWER_COMPLAINT_CHARGE.search(folded)
+        and _POWER_COMPLAINT_DEPLETE.search(folded)
+    )
+
+
+# Adult hair-/skin-care intent → Kişisel Bakım.  The generic Turkish word "bakım"
+# (care) matches the Anne & Bebek › "Bakım" sub_category, and "saç"/"cilt" then
+# pull baby products — so a verb-form complaint like "saçlarım dökülüyor" or
+# "cildim çok kuru" silently drifts to Anne & Bebek.  We detect the intent from a
+# body-part subject (saç / cilt / yüz) plus a care/symptom word, exclude explicit
+# baby context, and pin the right Kişisel Bakım sub-category.  An explicitly named
+# product form (şampuan / serum / …) is preserved so semantic search still
+# distinguishes it; otherwise product_type is left to the search layer.
+_BABY_CONTEXT = re.compile(r"\b(bebek|bebegim|bebegin|bebege|cocugum|cocuguma|yenidogan|emzik)\w*")
+
+_HAIR_SUBJECT = re.compile(r"\b(sac|saclar|sacim|saclarim|saclarimi|sacimi)\w*|\bkepek\w*")
+_HAIR_SYMPTOM = re.compile(
+    r"\b(dokul|incel|seyrel|kiril|kepek|yagli|guclendir|besle|uzat|bakim|"
+    r"sampuan|serum|maske|tonik|losyon|krem)\w*"
+)
+
+_SKIN_SUBJECT = re.compile(r"\b(cilt|cildim|cildimi|cildime|cildin|yuzum|yuzumu)\w*")
+_SKIN_SYMPTOM = re.compile(
+    r"\b(kuru|nemlendir|nem|leke|akne|sivilce|gozenek|yagli|kirisik|"
+    r"bakim|krem|serum|tonik|peeling|maske|temizleyici)\w*"
+)
+
+
+def is_hair_care_request(query):
+    """True for an adult hair-care intent (hair subject + care/symptom, no baby)."""
+    if not query:
+        return False
+    folded = normalize_text_for_match(query)
+    if _BABY_CONTEXT.search(folded):
+        return False
+    return bool(_HAIR_SUBJECT.search(folded) and _HAIR_SYMPTOM.search(folded))
+
+
+def is_skin_care_request(query):
+    """True for an adult skin-care intent (skin subject + care/symptom, no baby)."""
+    if not query:
+        return False
+    folded = normalize_text_for_match(query)
+    if _BABY_CONTEXT.search(folded):
+        return False
+    return bool(_SKIN_SUBJECT.search(folded) and _SKIN_SYMPTOM.search(folded))
+
+
+def _hair_product_type(folded):
+    """Map an explicitly named hair product form to its catalog product_type."""
+    for keyword, product_type in (
+        ("sampuan", "Şampuan"),
+        ("serum", "Saç Serumu"),
+    ):
+        if keyword in folded:
+            return product_type
+    return None
+
+
+def _skin_product_type(folded):
+    """Map an explicitly named skin product form to its catalog product_type."""
+    if "serum" in folded:
+        return "Cilt Serumu"
+    if "nemlendir" in folded or "krem" in folded:
+        return "Nemlendirici"
+    return None
+
+
+# Camp cooking → Kamp › Pişirme.  A verbose "kamp yaparken kahve/çorba pişirmek"
+# request drifts to Mutfak (a "Kahve Makinesi"/electric appliance) because the
+# cooking words outweigh the lost "kamp" context.  We detect camp context + a
+# cooking word and pin Kamp › Pişirme.  Pure camp queries without a cooking word
+# (tent, chair, lamp) do not fire, so their explicit product types are preserved.
+_CAMP_CONTEXT = re.compile(r"\b(kamp|kampta|kampi|kampta|outdoor)\w*")
+_CAMP_COOK = re.compile(
+    r"\b(pisir|yemek|ocak|kahve|corba|kaynat|isit|mangal|tencere|tava|kahvalti)\w*"
+)
+
+
+def is_camp_cooking_request(query):
+    """True for a camp-cooking intent (camp context + a cooking word)."""
+    if not query:
+        return False
+    folded = normalize_text_for_match(query)
+    return bool(_CAMP_CONTEXT.search(folded) and _CAMP_COOK.search(folded))
+
+
+# Yoga/pilates MAT → Spor › Yoga (product_type "Yoga Matı").  "yoga ve pilates"
+# alone leans to a Pilates Topu (ball); the discriminating signal is a mat word
+# ("mat", "minder", "yere serebileceğim").  Require both so a genuine ball
+# request ("pilates topu") is untouched.
+_YOGA_CONTEXT = re.compile(r"\b(yoga|pilates)\w*")
+_YOGA_MAT = re.compile(r"\b(mat|minder)\w*|\byere ser")
+
+
+def is_yoga_mat_request(query):
+    """True for a yoga/pilates MAT intent (yoga context + a mat word)."""
+    if not query:
+        return False
+    folded = normalize_text_for_match(query)
+    return bool(_YOGA_CONTEXT.search(folded) and _YOGA_MAT.search(folded))
+
+
+# Child shopper → target_group "Çocuk".  Strong child-purchase phrases ("oğlum
+# yeni yürümeye başladı", "okula başlayan") carry no literal "çocuk" token, so the
+# target group is lost and adult products surface.  Kept deliberately narrow to
+# unambiguous child cues to avoid mislabelling adult queries.
+_CHILD_CONTEXT = re.compile(
+    r"\b(yurumeye basla|yeni yuru|okula basla|okula yeni|anaokul|kres|"
+    r"cocugum|cocuguma|bebegim|bebegime)\w*"
+)
+
+
+def has_child_shopper_context(query):
+    """True when the query clearly describes shopping for a child."""
+    if not query:
+        return False
+    return bool(_CHILD_CONTEXT.search(normalize_text_for_match(query)))
 
 
 def apply_query_aliases(query, parsed_query):
@@ -905,6 +1104,121 @@ def _lock_explicit_intent(taxonomy_match, df,
 def parse_query(query, df, model, taxonomy_embeddings, taxonomy_records, taxonomy_match_threshold=DEFAULT_TAXONOMY_MATCH_THRESHOLD, original_query=None):
     min_price, max_price = extract_price_range(query)
 
+    # Fast-path: an implicit charge-depletion complaint ("şarjım dışarıda
+    # bitiyor") is a power-bank request.  We pin it to the Powerbank product_type
+    # BEFORE the taxonomy matcher runs, because "şarj" otherwise lands on
+    # "Araç Şarj Cihazı" and the original-query fallback in main.py would then
+    # override the correct normalized parse with car chargers.  Checked on both
+    # the (possibly normalized) query and the user's original words so it fires
+    # even with Ollama disabled.
+    if is_power_depletion_complaint(query) or (
+        original_query and is_power_depletion_complaint(original_query)
+    ):
+        return {
+            "min_price": min_price,
+            "max_price": max_price,
+            "main_category": "Elektronik",
+            "sub_category": None,
+            "product_type": "Powerbank",
+            "target_group": None,
+            "features": extract_features(query),
+            "contexts": extract_contexts(query),
+            "taxonomy_match": None,
+            "excluded_terms": [],
+            "explicit_intent": {
+                "main_category": None,
+                "sub_category": None,
+                "product_type": None,
+            },
+        }
+
+    # Fast-path: adult hair-/skin-care intent → Kişisel Bakım.  Pinned here, before
+    # the generic word "bakım" can match Anne & Bebek › Bakım and drag a verb-form
+    # complaint ("saçlarım dökülüyor", "cildim kuru") into baby products.  An
+    # explicitly named product form is kept; otherwise the search layer picks it.
+    folded_query = normalize_text_for_match(query)
+    folded_original = normalize_text_for_match(original_query) if original_query else ""
+    if is_hair_care_request(query) or (original_query and is_hair_care_request(original_query)):
+        product_type = _hair_product_type(folded_query) or _hair_product_type(folded_original)
+        return {
+            "min_price": min_price,
+            "max_price": max_price,
+            "main_category": "Kişisel Bakım",
+            "sub_category": "Saç Bakımı",
+            "product_type": product_type,
+            "target_group": None,
+            "features": extract_features(query),
+            "contexts": extract_contexts(query),
+            "taxonomy_match": None,
+            "excluded_terms": [],
+            "explicit_intent": {
+                "main_category": None,
+                "sub_category": None,
+                "product_type": None,
+            },
+        }
+    if is_skin_care_request(query) or (original_query and is_skin_care_request(original_query)):
+        product_type = _skin_product_type(folded_query) or _skin_product_type(folded_original)
+        return {
+            "min_price": min_price,
+            "max_price": max_price,
+            "main_category": "Kişisel Bakım",
+            "sub_category": "Cilt Bakımı",
+            "product_type": product_type,
+            "target_group": None,
+            "features": extract_features(query),
+            "contexts": extract_contexts(query),
+            "taxonomy_match": None,
+            "excluded_terms": [],
+            "explicit_intent": {
+                "main_category": None,
+                "sub_category": None,
+                "product_type": None,
+            },
+        }
+
+    # Fast-path: yoga/pilates MAT request → Spor › Yoga (product_type "Yoga Matı").
+    if is_yoga_mat_request(query) or (original_query and is_yoga_mat_request(original_query)):
+        return {
+            "min_price": min_price,
+            "max_price": max_price,
+            "main_category": "Spor",
+            "sub_category": "Yoga",
+            "product_type": "Yoga Matı",
+            "target_group": None,
+            "features": extract_features(query),
+            "contexts": extract_contexts(query),
+            "taxonomy_match": None,
+            "excluded_terms": [],
+            "explicit_intent": {
+                "main_category": None,
+                "sub_category": None,
+                "product_type": None,
+            },
+        }
+
+    # Fast-path: camp-cooking request → Kamp › Pişirme.  A named stove ("ocak")
+    # pins the product_type; otherwise the search layer picks within Pişirme.
+    if is_camp_cooking_request(query) or (original_query and is_camp_cooking_request(original_query)):
+        product_type = "Kamp Ocağı" if ("ocak" in folded_query or "ocak" in folded_original) else None
+        return {
+            "min_price": min_price,
+            "max_price": max_price,
+            "main_category": "Kamp",
+            "sub_category": "Pişirme",
+            "product_type": product_type,
+            "target_group": None,
+            "features": extract_features(query),
+            "contexts": extract_contexts(query),
+            "taxonomy_match": None,
+            "excluded_terms": [],
+            "explicit_intent": {
+                "main_category": None,
+                "sub_category": None,
+                "product_type": None,
+            },
+        }
+
     # Negative product-type/category constraints ("mont veya kaban değil").
     # Detected from the user's literal words (both the original and the
     # possibly-normalized query) so rejected terms are never mistaken for the
@@ -992,13 +1306,23 @@ def parse_query(query, df, model, taxonomy_embeddings, taxonomy_records, taxonom
         if explicit_sub_category != "Elbise":
             explicit_product_type = None
     
+    # Target group: the literal value in the query, else "Çocuk" when the query
+    # clearly describes shopping for a child ("oğlum yeni yürümeye başladı") even
+    # though no literal "çocuk" token is present.
+    target_group = find_value_from_column(query, df, "target_group")
+    if target_group is None and (
+        has_child_shopper_context(query)
+        or (original_query and has_child_shopper_context(original_query))
+    ):
+        target_group = "Çocuk"
+
     parsed = {
         "min_price": min_price,
         "max_price": max_price,
         "main_category": explicit_main_category,
         "sub_category": explicit_sub_category,
         "product_type": explicit_product_type,
-        "target_group": find_value_from_column(query, df, "target_group"),
+        "target_group": target_group,
         "features": extract_features(query),
         "contexts": extract_contexts(query),
         "taxonomy_match": taxonomy_match,
