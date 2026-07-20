@@ -9,8 +9,21 @@ Pipeline: niyet sınıflandırma → (Ollama ile) sorgu normalizasyonu → kural
 ayrıştırma → FAISS anlamsal arama + bonus/ceza yeniden sıralama → (Ollama ile)
 doğal Türkçe yanıt yazımı. Ollama yalnızca **normalizer/yazar** rolündedir; ürün
 üretmez veya sıralamayı değiştirmez. Ollama kapalıyken sistem kural-tabanlı çalışır.
+Sonuçlar Ranking V2 ile doğrudan niyete göre sıralanır ve gerektiğinde
+**“En uygun ürünler” / “İlgili alternatifler”** şeklinde gruplanır.
 
-Derin mimari referansı: [`docs/PROJECT_OVERVIEW.md`](docs/PROJECT_OVERVIEW.md).
+## Dokümantasyon
+
+- [`README.md`](README.md): kurulum, çalıştırma ve hızlı doğrulama.
+- [`PROJECT_OVERVIEW.md`](PROJECT_OVERVIEW.md): güncel mimari, veri modeli,
+  örnek sorgular, yapılandırma ve tüm test/eval komutları için tek teknik kaynak.
+- [`AGENTS.md`](AGENTS.md): Codex ve diğer uyumlu kodlama ajanları için ortak proje
+  kuralları.
+- [`CLAUDE.md`](CLAUDE.md): Claude Code'un `AGENTS.md` kurallarını otomatik yüklemesini
+  sağlayan kısa uyumluluk dosyası.
+
+Geçici eval JSON çıktıları kaynak doküman değildir; gerektiğinde
+`backend/eval/results/` altında yeniden üretilir ve Git tarafından izlenmez.
 
 ## Gereksinimler
 
@@ -29,7 +42,21 @@ docker compose up -d
 # postgres -> host portu 5433, pgadmin -> 5050
 ```
 
-### 2. Backend (FastAPI)
+### 2. Ollama (opsiyonel)
+
+```bash
+# Ollama sistem servisi/masaüstü uygulaması çalışmıyorsa ayrı terminalde:
+ollama serve
+
+# İlk kurulumda modeli bir kez indirin:
+ollama pull gemma3:4b
+```
+
+Ollama `http://localhost:11434` adresinde çalışır. Tamamen devre dışı bırakmak
+için `backend/.env` içine `OLLAMA_ENABLED=false` yazılabilir; arama sistemi
+kural-tabanlı fallback ile çalışmaya devam eder.
+
+### 3. Backend (FastAPI)
 
 ```bash
 cd backend
@@ -44,8 +71,9 @@ uvicorn main:app --reload          # http://127.0.0.1:8000
 
 `DATABASE_URL` tek zorunlu değişkendir; eksikse uvicorn açılışta sesli hata verir.
 Katalog ve embedding'ler boot anında yüklenir (ilk açılış birkaç saniye sürer).
+Windows'ta sanal ortam yorumlayıcısı `backend\.venv\Scripts\python.exe` yolundadır.
 
-### 3. Frontend (React + Vite)
+### 4. Frontend (React + Vite)
 
 ```bash
 cd frontend
@@ -53,16 +81,18 @@ npm install
 npm run dev                        # http://localhost:5173
 ```
 
-## Ollama (opsiyonel)
+## Servis Adresleri
 
-```bash
-ollama pull gemma3:4b
-ollama serve                       # http://localhost:11434
-```
+- Frontend: `http://localhost:5173`
+- Backend sağlık kontrolü: `http://127.0.0.1:8000/`
+- Backend arama endpoint'i: `POST http://127.0.0.1:8000/search`
+- Ollama: `http://localhost:11434`
+- PostgreSQL: `localhost:5433`
+- pgAdmin: `http://localhost:5050`
 
-Tamamen devre dışı bırakmak için `backend/.env` içine `OLLAMA_ENABLED=false`.
-Tüm config `AI_MARKET_*` / `OLLAMA_*` env değişkenleriyle ayarlanır; varsayılanlar
-`backend/config.py` ve `backend/.env.example` içinde.
+Tüm backend ayarları `AI_MARKET_*`, `DATABASE_URL`, `PRODUCTS_TABLE` ve
+`OLLAMA_*` ortam değişkenleriyle yönetilir. Açıklamalar `backend/.env.example`
+ve [`PROJECT_OVERVIEW.md`](PROJECT_OVERVIEW.md) içinde yer alır.
 
 > Not: Varsayılan `gemma3:4b` bilinçli bir tercihtir. Daha büyük modeller (12b)
 > 10 GB VRAM'e backend'in embedding modeliyle birlikte sığmaz ve CPU'ya taşarak
@@ -72,14 +102,12 @@ Tüm config `AI_MARKET_*` / `OLLAMA_*` env değişkenleriyle ayarlanır; varsay�
 
 ```bash
 cd backend
-./.venv/bin/python -m pytest tests/                # deterministik birim testleri (CI-güvenli)
-
-# Arama kalitesi regresyon harness'i (modeli yükler, API sunucusu gerekmez)
-./.venv/bin/python eval/run_eval.py --show-failures
-
-# Canlı API'ye karşı manuel regresyon (Ollama açıkken, ayrı terminalde)
-./.venv/bin/python -m manual.api_queries           # STRICT: regresyonda non-zero çıkar
+./.venv/bin/python -m pytest tests/
 ```
+
+Gold eval, stress eval, uzun sorgu eval'i ve canlı API regresyon komutları için
+[`PROJECT_OVERVIEW.md` içindeki Test ve Doğrulama Altyapısı](PROJECT_OVERVIEW.md#9-test-ve-doğrulama-altyapısı)
+bölümüne bakın.
 
 ## Dil Kuralları
 
@@ -99,5 +127,7 @@ backend/          FastAPI servisi (tek endpoint: POST /search)
   tests/            deterministik pytest paketi
   eval/             altın-set arama kalitesi harness'i
 frontend/         React 19 + Vite vitrin arayüzü
-docs/             mimari dokümantasyon
+PROJECT_OVERVIEW.md teknik referans ve test kılavuzu
+AGENTS.md          ortak kodlama ajanı talimatları
+CLAUDE.md          Claude Code → AGENTS.md uyumluluk katmanı
 ```

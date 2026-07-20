@@ -19,10 +19,8 @@ frontend/dist/
 .env
 .env.local
 
-# Local-only docs: keep these out of the public repo. Only README.md and the
-# root PROJECT_OVERVIEW.md are published.
-/CLAUDE.md
-/docs/
+# AI assistant machine-local state (may be recreated by Claude Code)
+/.claude/
 
 # VS Code
 .vscode/
@@ -31,20 +29,12 @@ frontend/dist/
 .DS_Store
 Thumbs.db
 
-# Large / raw datasets
+# Local/generated data
 backend/raw_products.csv
 backend/products_prepared.csv
 .cursor/
 scratch/
-backend/scratch/
-backend/report.json
 frontend/vite.config.js.bak
 
-# Manual scripts caches
-backend/manual/__pycache__/
-
-# WIP backup/patch artifacts
-WIP_*
-
-# Local eval result snapshots
+# Generated evaluation reports
 backend/eval/results/*.json

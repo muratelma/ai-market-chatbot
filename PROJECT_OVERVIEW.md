@@ -302,7 +302,7 @@ arama sessizce yanlış ürün döndürür. `ORDER BY id` bu yüzden kozmetik de
 
 `backend/db/seed_products.sql`, kataloğun **tek doğru kaynağıdır** (`pg_dump` çıktısı):
 
-- `products` tablosunun şemasını (`id` PK + 10 katalog sütunu) ve **1000 ürünlük** `INSERT`
+- `products` tablosunun şemasını (`id` PK + 10 katalog sütunu) ve **1008 ürünlük** `INSERT`
   ifadelerini içerir. Satırlar `id = 1..N` ile sabittir → `ORDER BY id` yüklemesi embedding
   sırasını korur.
 
@@ -398,9 +398,8 @@ amaçlı** bir debug alanında raporlar; sıralamayı/ürünleri değiştirmez.
 bitirmeodevi/
 ├── README.md                   # Kurulum + çalıştırma rehberi (clone → çalıştır)
 ├── PROJECT_OVERVIEW.md         # Güncel genel bakış (tek otoriter doküman) — kök dizinde
-├── SUNUM_TEKNIK_REHBER.md      # Sunum savunması: her sınıf + FAISS + sorgu yol haritası + soru-cevap
-├── SUNUM_SORGULARI.md          # Sunum için test edilmiş örnek sorgular (senaryo bazlı)
-├── RUNNING_TESTS.md            # Test/eval çalıştırma komutları
+├── AGENTS.md                   # Codex ve uyumlu ajanlar için ortak proje kuralları
+├── CLAUDE.md                   # Claude Code'un AGENTS.md import/yönlendirme katmanı
 ├── docker-compose.yml          # PostgreSQL (5433) + pgAdmin (5050) servisleri
 │
 ├── backend/                    # FastAPI tabanlı arama/öneri servisi
@@ -430,16 +429,16 @@ bitirmeodevi/
 │   ├── requirements.txt        # FastAPI, sentence-transformers, faiss-cpu, psycopg2, httpx, python-dotenv...
 │   │
 │   ├── db/
-│   │   └── seed_products.sql    # 1000 ürünlük katalog seed'i (pg_dump çıktısı; tek doğru kaynak)
+│   │   └── seed_products.sql    # 1008 ürünlük katalog seed'i (pg_dump çıktısı; tek doğru kaynak)
 │   ├── scripts/
 │   │   └── seed_products_postgres.py  # Mevcut DB'yi seed dosyasından yeniden doldurur (DESTRUCTIVE)
 │   │
 │   ├── eval/                   # Arama kalitesi regresyon harness'i (model gerektirir, API değil)
 │   │   ├── gold_queries.json    # 46 sorguluk altın küme (beklenen intent/kategori/boş sonuç etiketleri)
 │   │   ├── run_eval.py          # Gold-set benchmark koşucusu (--show-failures, --output-json)
-│   │   ├── stress_queries_*.json# Geniş stress sorgu kümesi (şu an 100 sorgu)
+│   │   ├── stress_queries_*.json # Geniş stress sorgu kümesi (şu an 100 sorgu)
 │   │   ├── run_stress_eval.py   # Stress benchmark koşucusu
-│   │   └── results/             # Karşılaştırma çıktıları (JSON)
+│   │   └── results/             # İsteğe bağlı, geçici karşılaştırma JSON'ları (Git tarafından izlenmez)
 │   │
 │   ├── manual/                 # Canlı API'ye karşı manuel regresyon harness'i (Ollama non-deterministik)
 │   │   ├── scenarios.py         # Tek doğru kaynak: senaryo matrisi + check sözlüğü
@@ -449,6 +448,7 @@ bitirmeodevi/
 │   └── tests/                  # Deterministik pytest testleri (CI'de güvenli; pytest.ini yalnız tests/)
 │       ├── test_query_parser.py        # Fiyat/kategori/feature/context çıkarımı
 │       ├── test_response_planner.py     # Mod kararı
+│       ├── test_response_rewriter.py    # Deterministik yanıt fallback/biçim kuralları
 │       ├── test_search_engine.py        # Filtre + bonus/penalty skorlama
 │       ├── test_ranking_core.py         # Directness tier / regime / gruplama
 │       ├── test_ranking_v2_regression.py# Ranking V2 sıralama regresyon kilidi
@@ -482,48 +482,116 @@ bitirmeodevi/
 
 ---
 
+## Örnek Sorgular
+
+Bu bölüm kısa demo sorgularını ve uzun doğal-dil eval setinden seçilmiş örnekleri tek
+yerde toplar. Kısa sorgular sunum/canlı demo için uygundur; uzun sorgular ürün adını
+doğrudan söylemeden ihtiyaç, bağlam ve özelliklerin birlikte anlaşılmasını gösterir.
+Programatik uzun-sorgu kaynağı `backend/eval/long_queries.json` dosyasıdır ve **18 sorgu**
+içerir.
+
+### Hızlı Demo Seti
+
+Sunumda sistemin temel yeteneklerini kısa sürede göstermek için:
+
+1. `kamp için uyku tulumu öner` — doğrudan ürün tipi araması.
+2. `bilgisayar için kablosuz mouse öner` — bağlam + özellik + ürün tipi.
+3. `yağlı saç için şampuan öner` — problem odaklı kişisel bakım araması.
+4. `telefonum hemen bitiyor` — ürün adı söylenmeden powerbank niyeti.
+5. `1500 TL altında erkek ayakkabı` — fiyat + hedef kitle + kategori filtresi.
+6. `Kışlık kadın elbisesi önerir misin? Mont veya kaban değil, elbise arıyorum.` —
+   pozitif niyet + negatif kısıt.
+
+### Davranış Kapsamı
+
+| Davranış | Örnek sorgular | Beklenen davranış |
+| --- | --- | --- |
+| Sohbet | `merhaba`, `ne yapabilirsin`, `teşekkürler` | Ürün araması çalıştırmadan uygun sohbet yanıtı verir. |
+| Geniş kategori | `kamp için ürün öner`, `elektronik ürün öner`, `bebek için ürün öner` | Farklı ürün tiplerini çeşitlendirir ve gerekirse takip sorusu sorar. |
+| Net ürün | `yağmurlu havalar için kadın bot öner`, `yoga için mat öner`, `mutfak için kahve makinesi öner` | Belirtilen ürün tipine odaklanır. |
+| Dolaylı ihtiyaç | `kamp için yemek yapacak bir şey lazım`, `koşmak için bir spor ayakkabı lazım` | İhtiyacı uygun ürün/kategori niyetine dönüştürür. |
+| Fiyat filtresi | `1500 TL üstünde ayakkabı`, `1000 ile 2000 TL arası elektronik ürün`, `2000 TL altında kahve makinesi` | Fiyat sınırını sert filtre olarak uygular. |
+| Belirsiz istek | `ürün öner`, `bir şey lazım`, `1500 TL altında erkek` | Rastgele ürün yerine netleştirme sorusu döndürür. |
+| Katalog dışı | `uzay mekiği`, `zaman makinesi almak istiyorum`, `görünmezlik pelerini almak istiyorum` | Ürün uydurmadan katalogda bulunmadığını söyler. |
+
+### Uzun Doğal-Dil Örnekleri
+
+| Beklenen niyet | Sorgu |
+| --- | --- |
+| Powerbank | `Geçen hafta dışarıda yürürken telefonumun şarjı sürekli bittiği için çok zor durumda kaldım, yanımda taşıyabileceğim güçlü bir şey önerir misin` |
+| Kamp pişirme | `Kışın dağda kamp yaparken sabahları sıcak bir kahve ya da çorba hazırlayabilmem için yanımda götürebileceğim pratik bir pişirme çözümü arıyorum` |
+| Robot süpürge | `Annem yaşlı olduğu için evi kendi başına temizlemekte zorlanıyor, onun yerine zemini otomatik süpürüp paspaslayacak akıllı bir cihaz lazım` |
+| Çocuk ayakkabısı | `Oğlum yeni yürümeye başladı ve sürekli düşüyor, ayağını koruyacak ama rahat da olan kaymaz tabanlı bir ayakkabı arıyorum` |
+| Ergonomik mouse | `Ofiste bütün gün bilgisayar başında oturduğum için bileğim ağrıyor, uzun süre kullanımda elimi yormayan ergonomik bir mouse istiyorum` |
+| Araç şarj cihazı | `Uzun araba yolculuklarında çocuklar arka koltukta tablet izlerken telefonum da şarjda kalsın istiyorum, arabada birden fazla cihazı aynı anda şarj edecek bir çözüm lazım` |
+| Gürültü önleyici kulaklık | `Sık sık uçağa biniyorum ve motor sesinden çok rahatsız oluyorum, etrafımdaki gürültüyü kesen kablosuz bir kulaklık arıyorum` |
+| Termos | `Sabah işe giderken yanıma aldığım çayı ya da kahveyi öğlene kadar sıcacık tutacak, sızdırmaz sağlam bir termos arıyorum` |
+| Dört kişilik çadır | `Ailecek hafta sonu doğada kamp yapmayı planlıyoruz, dört kişinin rahatça sığacağı su geçirmez ve kurulumu kolay bir çadır lazım` |
+
+Tam seti çalıştırmak için Bölüm 9'daki uzun sorgu eval komutu kullanılır.
+
+---
+
 ## 9. Test ve Doğrulama Altyapısı
 
-Üç katmanlı bir doğrulama yapısı vardır: deterministik birim testler, canlı manuel
-regresyon ve arama kalitesi eval'i.
+Doğrulama dört katmandan oluşur: deterministik pytest paketi, gold/uzun sorgu eval'i,
+stress eval ve canlı API regresyonu. Aşağıdaki komutların tümü `backend/` klasöründe
+çalıştırılır. Linux/macOS'taki `./.venv/bin/python` yolu Windows'ta
+`.venv\Scripts\python.exe` olarak değiştirilir.
 
 ### Birim/Entegrasyon Testleri (pytest — deterministik, CI'de güvenli)
 
 `backend/tests/` altındaki testler Ollama'ya bağımlı değildir (bkz. Bölüm 8'deki dosya
-açıklamaları).
+açıklamaları). Docker, çalışan API veya Ollama gerekmez. Mevcut envanter **122 testtir**;
+sabit bir başarı sayısını dokümana kilitlemek yerine güncel sayıyı `--collect-only` ile
+kontrol edin.
 
 ```bash
 cd backend
 ./.venv/bin/python -m pytest tests/        # pytest.ini yalnız tests/ klasörünü toplar
+./.venv/bin/python -m pytest --collect-only -q tests/  # test envanteri
 ```
 
-### Manuel Regresyon (canlı API'ye karşı, pytest dışında)
+### Gold, Uzun Sorgu ve Stress Eval
 
-Ollama non-deterministik olduğu için **canlı çalışan bir API'ye** karşı koşulur. Senaryolar
-tek kaynaktan (`manual/scenarios.py`) gelir:
+Eval harness'i canlı API veya Ollama kullanmaz; embedding modelini ve PostgreSQL kataloğunu
+doğrudan yükler. Bu nedenle PostgreSQL çalışmalı, `backend/.env` içindeki `DATABASE_URL`
+geçerli olmalıdır. Mevcut setler: **46 gold**, **18 uzun sorgu** ve dosya adında `_1000`
+geçmesine rağmen **100 stress sorgusu**.
 
 ```bash
-./.venv/bin/python -m manual.api_queries        # STRICT: regresyonda non-zero exit
+./.venv/bin/python eval/run_eval.py --show-failures
+./.venv/bin/python eval/run_eval.py --gold-set eval/long_queries.json --show-failures
+./.venv/bin/python eval/run_stress_eval.py --show-failures
+```
+
+Bu komutlar kalite metriklerini raporlar; pytest gibi otomatik bir geçme/kalma eşiği
+uygulamaz. Karşılaştırma gerektiğinde ayrıntılı snapshot açıkça üretilebilir:
+
+```bash
+./.venv/bin/python eval/run_eval.py --show-failures \
+  --output-json eval/results/baseline.json
+```
+
+`eval/results/*.json` dosyaları her sorgunun ürünlerini ve parse çıktısını içeren geçici,
+yeniden üretilebilir raporlardır. Kaynak kod değildir, Git tarafından izlenmez ve
+karşılaştırma bittikten sonra silinebilir.
+
+### Canlı API Regresyonu (pytest dışında)
+
+Backend `http://127.0.0.1:8000` adresinde çalışmalıdır; frontend gerekmez. Senaryoların
+tek kaynağı `manual/scenarios.py` içindeki **46 senaryodur**.
+
+```bash
+./.venv/bin/python -m manual.api_queries        # STRICT: hatada non-zero exit
 ./.venv/bin/python -m manual.ollama_regression  # WARNING-only: her zaman 0 exit
 ```
 
-### Eval / Stress Eval (arama kalitesi regresyonu)
-
-Model gerektirir (API sunucusu değil). Parser/ranking değişikliği sonrası aynı komut tekrar
-koşulup JSON çıktıları karşılaştırılır.
-
-```bash
-./.venv/bin/python eval/run_eval.py --show-failures --output-json eval/results/baseline.json
-./.venv/bin/python eval/run_stress_eval.py
-./.venv/bin/python eval/run_eval.py --gold-set eval/long_queries.json   # uzun sorgular
-```
-
-- **Gold set** (`gold_queries.json`, **46 sorgu**): beklenen intent/kategori/ürün tipi veya
-  `expects_clarification` / `expects_empty_result` etiketleriyle relevance ölçümü.
-- **Stress set** (şu an **100 sorgu**): geniş sorgu yelpazesiyle dayanıklılık ölçümü.
-- **Uzun sorgu seti** (`long_queries.json`, **18 sorgu**): tek cümlede birden çok bağlam
-  taşıyan doğal-dil sorgularında (Bölüm 4'teki deterministik kısayolların) regresyonunu
-  ölçer. Mevcut Top-1 / Top-3 = **%100**.
+İlk komut deterministik sözleşmeleri denetler ve gerçek regresyonda başarısız olur. İkinci
+komut Ollama'ya duyarlı, non-deterministik kontrolleri uyarı olarak gösterir ve her zaman
+başarılı exit kodu döndürür. Ollama regression için Ollama açık ve `OLLAMA_ENABLED=true`
+olmalıdır. Eski Windows terminallerinde Türkçe çıktı bozulursa önce
+`set PYTHONIOENCODING=utf-8` çalıştırılabilir.
 
 ---
 
@@ -538,27 +606,62 @@ docker compose up -d           # postgres → host 5433, pgadmin → 5050
 cd backend && ./.venv/bin/python scripts/seed_products_postgres.py
 ```
 
-### 2) Backend
+### 2) Ollama (opsiyonel)
+
+Ollama kapalıyken sistem çalışır; normalleştirme ve doğal yanıt yazımı deterministik
+fallback'e geçer. LLM özellikleri kullanılacaksa:
+
+```bash
+# Sistem servisi/masaüstü uygulaması çalışmıyorsa ayrı bir terminalde:
+ollama serve
+
+# İlk kurulumda bir kez:
+ollama pull gemma3:4b
+```
+
+Sağlık/model kontrolü: `ollama list` veya `http://localhost:11434/api/tags`.
+
+### 3) Backend
 
 ```bash
 cd backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env           # DATABASE_URL'i içerir; açılışta otomatik yüklenir (python-dotenv)
-# (Opsiyonel) Ollama: ollama serve && ollama pull gemma3:4b
 uvicorn main:app --reload      # http://127.0.0.1:8000
 ```
 
-İlk açılışta sentence-transformers modeli yüklenir + 1000 ürün embed'lenir (birkaç saniye);
+İlk açılışta sentence-transformers modeli yüklenir + 1008 ürün embed'lenir (birkaç saniye);
 Ollama açıksa LLM modeli de arka planda **warm-up** edilir (ilk sorgu hızlı gelsin diye).
 Konsolda "AI-Market API hazır." görünür.
 
-### 3) Frontend
+### 4) Frontend
 
 ```bash
 cd frontend
 npm install
 npm run dev                    # http://localhost:5173
+```
+
+### Sağlık Kontrolleri
+
+```bash
+curl http://127.0.0.1:8000/
+curl http://127.0.0.1:11434/api/tags   # Ollama açıksa
+docker compose ps
+```
+
+Frontend `http://localhost:5173`, pgAdmin `http://localhost:5050` adresindedir.
+
+### pgAdmin İlk Bağlantı
+
+Yerel demo girişi `admin@example.com` / `admin123` değerleridir. pgAdmin içinde yeni
+sunucu kaydında Host=`postgres`, Port=`5432`, Database=`aimarket`,
+Username=`aimarket_user`, Password=`aimarket_pass` kullanılır. Backend konteyner dışından
+bağlandığı için `.env` adresinde farklı olarak host portu `5433` kullanır:
+
+```text
+postgresql://aimarket_user:aimarket_pass@localhost:5433/aimarket
 ```
 
 ---
