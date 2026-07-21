@@ -151,23 +151,6 @@ function Chatbot({ isOpen, onToggle, initialQuery }) {
     }
   }, [isOpen]);
 
-  // Handle initial query from category/search
-  useEffect(() => {
-    if (initialQuery && isOpen && !hasHandledInitialQuery.current) {
-      hasHandledInitialQuery.current = true;
-      setInput(initialQuery);
-      // Auto-send after a brief delay
-      setTimeout(() => {
-        sendMessage(initialQuery);
-      }, 300);
-    }
-  }, [initialQuery, isOpen]);
-
-  // Reset the flag when initialQuery changes
-  useEffect(() => {
-    hasHandledInitialQuery.current = false;
-  }, [initialQuery]);
-
   // Lightweight, frontend-only guess at whether a message is a product search
   // or plain chat, used ONLY to pick the loading text. This does not mirror the
   // backend intent system; when unclear it prefers the neutral chat wording.
@@ -299,6 +282,26 @@ function Chatbot({ isOpen, onToggle, initialQuery }) {
     setInput("");
     await performSearch(queryToSend, userQuery);
   };
+
+  // Handle initial query from category/search. sendMessage is intentionally
+  // omitted from the dependencies: this effect follows external query/open
+  // changes, while the ref prevents duplicate automatic submissions.
+  useEffect(() => {
+    if (initialQuery && isOpen && !hasHandledInitialQuery.current) {
+      hasHandledInitialQuery.current = true;
+      setInput(initialQuery);
+      // Auto-send after a brief delay
+      setTimeout(() => {
+        sendMessage(initialQuery);
+      }, 300);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuery, isOpen]);
+
+  // Reset the flag when initialQuery changes
+  useEffect(() => {
+    hasHandledInitialQuery.current = false;
+  }, [initialQuery]);
 
   const handleRetry = (queryToSend) => {
     if (loading || !queryToSend) return;

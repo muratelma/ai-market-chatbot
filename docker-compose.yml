@@ -1,36 +1,128 @@
 services:
   postgres:
     image: postgres:16
-    container_name: aimarket-postgres
-    restart: unless-stopped
+    restart: "on-failure:3"
     environment:
-      POSTGRES_DB: aimarket
-      POSTGRES_USER: aimarket_user
-      POSTGRES_PASSWORD: aimarket_pass
+      POSTGRES_DB: ${POSTGRES_DB:-aimarket}
+      POSTGRES_USER: ${POSTGRES_USER:-aimarket_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aimarket_pass}
     ports:
       - "5433:5432"
     volumes:
       - aimarket_postgres_data:/var/lib/postgresql/data
-      # Auto-seed the catalog ONLY on a fresh/empty volume: scripts in
-      # /docker-entrypoint-initdb.d run only during first-time DB init.
-      # Existing volumes are untouched — reseed manually with
-      # backend/scripts/seed_products_postgres.py (or psql -f).
+      # Seed only a fresh/empty volume. Existing catalog data is never reset.
       - ./backend/db/seed_products.sql:/docker-entrypoint-initdb.d/seed_products.sql:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
 
   pgadmin:
     image: dpage/pgadmin4
-    container_name: aimarket-pgadmin
-    restart: unless-stopped
+    restart: "on-failure:3"
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@example.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin123}
     ports:
       - "5050:80"
     volumes:
       - aimarket_pgadmin_data:/var/lib/pgadmin
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+
+  ollama:
+    image: ollama/ollama:latest
+    restart: "on-failure:3"
+    volumes:
+      - aimarket_ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+
+  ollama-init:
+    image: ollama/ollama:latest
+    restart: "no"
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    volumes:
+      - aimarket_ollama_data:/root/.ollama
+    command: ["pull", "${OLLAMA_MODEL:-gemma3:4b}"]
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+  backend:
+    image: aimarket-backend:cpu
+    build:
+      context: ./backend
+      args:
+        PYTORCH_INDEX_URL: https://download.pytorch.org/whl/cpu
+    init: true
+    restart: "on-failure:3"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-aimarket_user}:${POSTGRES_PASSWORD:-aimarket_pass}@postgres:5432/${POSTGRES_DB:-aimarket}
+      PRODUCTS_TABLE: ${PRODUCTS_TABLE:-products}
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma3:4b}
+      OLLAMA_ENABLED: ${OLLAMA_ENABLED:-true}
+      OLLAMA_WARMUP: ${OLLAMA_WARMUP:-true}
+      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-10m}
+      OLLAMA_TIMEOUT_SECONDS: ${OLLAMA_TIMEOUT_SECONDS:-120}
+      AI_MARKET_RANKING_V2: ${AI_MARKET_RANKING_V2:-true}
+      AI_MARKET_GROUPED_RANKING: ${AI_MARKET_GROUPED_RANKING:-true}
+    ports:
+      - "8000:8000"
+    volumes:
+      - aimarket_huggingface_cache:/home/appuser/.cache/huggingface
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ollama-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/', timeout=5)",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 300s
+
+  frontend:
+    image: aimarket-frontend:latest
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: /api/search
+    restart: "on-failure:3"
+    ports:
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
 
 volumes:
   aimarket_postgres_data:
   aimarket_pgadmin_data:
+  aimarket_ollama_data:
+  aimarket_huggingface_cache:

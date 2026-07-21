@@ -137,7 +137,8 @@ için **Ollama** (opsiyonel — kapalıyken sistem tamamen kuralcı yoldan çal�
                           ▼                                                ▼
               ┌───────────────────────────┐                  ┌───────────────────────────┐
               │  Veri kaynağı: PostgreSQL  │                  │  Yan servis: Ollama        │
-              │  host port 5433            │                  │  http://localhost:11434    │
+              │  Docker: postgres:5432     │                  │  Docker: ollama:11434      │
+              │  Host: localhost:5433      │                  │  Host portuna açılmaz      │
               │  products tablosu          │                  │  /api/generate (httpx)     │
               │  ORDER BY id (açılışta,    │                  │  Model: gemma3:4b (env)    │
               │  salt-okunur yükleme)      │                  │  Normalizer + Writer       │
@@ -400,9 +401,16 @@ bitirmeodevi/
 ├── PROJECT_OVERVIEW.md         # Güncel genel bakış (tek otoriter doküman) — kök dizinde
 ├── AGENTS.md                   # Codex ve uyumlu ajanlar için ortak proje kuralları
 ├── CLAUDE.md                   # Claude Code'un AGENTS.md import/yönlendirme katmanı
-├── docker-compose.yml          # PostgreSQL (5433) + pgAdmin (5050) servisleri
+├── .env.example                # Compose için isteğe bağlı ortam değişkeni override'ları
+├── docker-compose.yml          # CPU varsayılan tam stack (DB, pgAdmin, Ollama, API, web)
+├── docker-compose.gpu.yml      # Ollama + backend için NVIDIA GPU override'ı
+├── documentation/
+│   ├── DOCKER_MIGRATION_REPORT.md # Docker geçişi, kurulum, risk ve doğrulama raporu
+│   └── RELEASE_NOTES_v1.1.0.md    # Tam Docker stack geçişinin sürüm notları
 │
 ├── backend/                    # FastAPI tabanlı arama/öneri servisi
+│   ├── Dockerfile              # CPU/GPU PyTorch index argümanlı backend imajı
+│   ├── .dockerignore           # Backend build context dışlamaları
 │   ├── main.py                 # FastAPI giriş noktası; /search akışı + açılışta Ollama warm-up
 │   ├── config.py               # ENV yapılandırma (DATABASE_URL zorunlu; .env otomatik yüklenir; Ollama, flag'ler)
 │   ├── .env.example            # Örnek ortam dosyası (backend/.env'e kopyalanır, gitignored)
@@ -462,6 +470,9 @@ bitirmeodevi/
 │       └── fixtures/                    # Test sabitleri (örn. örnek ürün CSV'si)
 │
 └── frontend/                   # React 19 + Vite 8 vitrin (React Compiler etkin)
+    ├── Dockerfile              # Node build + Nginx runtime imajı
+    ├── .dockerignore           # Frontend build context dışlamaları
+    ├── nginx.conf              # SPA sunumu ve /api/ → backend ters proxy ayarı
     ├── index.html              # SPA giriş HTML'i
     ├── package.json            # Bağımlılıklar ve scriptler (dev/build/lint)
     ├── vite.config.js          # Vite yapılandırması
@@ -597,84 +608,139 @@ olmalıdır. Eski Windows terminallerinde Türkçe çıktı bozulursa önce
 
 ## 10. Çalıştırma Adımları
 
-### 1) Veritabanı (PostgreSQL + pgAdmin)
+### Docker Engine ve proje yaşam döngüsü
+
+Sürekli çalışan servislerin restart politikası `on-failure:3` değeridir. Servis
+Docker Engine çalışırken non-zero kodla kapanırsa en fazla üç kez yeniden başlatılır;
+Docker daemon veya bilgisayar yeniden başladığında Compose projesi otomatik başlamaz.
+`ollama-init` tek seferlik görev olduğu için `restart: "no"` kullanır.
+
+Linux host'ta Docker Engine'in açılışta etkinleşmesini kapatmak için bir kez:
 
 ```bash
-docker compose up -d           # postgres → host 5433, pgadmin → 5050
-# Taze hacim seed_products.sql ile otomatik dolar.
-# Mevcut DB'yi yeniden seed etmek (DESTRUCTIVE):
-cd backend && ./.venv/bin/python scripts/seed_products_postgres.py
+sudo systemctl disable --now docker.service docker.socket
 ```
 
-### 2) Ollama (opsiyonel)
-
-Ollama kapalıyken sistem çalışır; normalleştirme ve doğal yanıt yazımı deterministik
-fallback'e geçer. LLM özellikleri kullanılacaksa:
+Bu host ayarı repository tarafından uygulanmaz ve çalışan bütün Docker projelerini
+durdurur. Daha sonra Engine ile seçilen Compose projesi ayrı adımlarda başlatılır:
 
 ```bash
-# Sistem servisi/masaüstü uygulaması çalışmıyorsa ayrı bir terminalde:
-ollama serve
-
-# İlk kurulumda bir kez:
-ollama pull gemma3:4b
+sudo systemctl start docker.service
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build -d
 ```
 
-Sağlık/model kontrolü: `ollama list` veya `http://localhost:11434/api/tags`.
+Son komut bu makinenin NVIDIA GPU akışıdır; CPU kullanıcıları aşağıdaki varsayılan
+komutu kullanır. Birden fazla proje varsa yalnız `docker compose up` çalıştırılan
+proje ayağa kalkar; `unless-stopped` veya `always` kullanan başka container'lar bu
+garantinin dışındadır.
 
-### 3) Backend
+### Varsayılan CPU stack'i
 
 ```bash
-cd backend
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env           # DATABASE_URL'i içerir; açılışta otomatik yüklenir (python-dotenv)
-uvicorn main:app --reload      # http://127.0.0.1:8000
+docker compose up --build -d
 ```
 
-İlk açılışta sentence-transformers modeli yüklenir + 1008 ürün embed'lenir (birkaç saniye);
-Ollama açıksa LLM modeli de arka planda **warm-up** edilir (ilk sorgu hızlı gelsin diye).
-Konsolda "AI-Market API hazır." görünür.
+Compose aşağıdaki sırayı sağlık kontrolleriyle yönetir:
 
-### 4) Frontend
+1. `postgres` sağlıklı olur; taze volume `seed_products.sql` ile otomatik dolar.
+2. `ollama` açılır ve tek seferlik `ollama-init`, `gemma3:4b` modelini indirir.
+3. `backend`, katalog ile Sentence-Transformers modelini yükleyip embeddingleri oluşturur.
+4. `frontend`, backend sağlıklı olduğunda Nginx üzerinde açılır.
+
+İlk başlangıç Docker imajları ile yaklaşık 3.3 GB Ollama modelini ve Hugging Face
+embedding modelini indirir. `aimarket_ollama_data` ve `aimarket_huggingface_cache`
+volume'leri sayesinde sonraki başlangıçlarda indirmeler tekrarlanmaz.
+
+### NVIDIA GPU override
+
+Varsayılan stack CPU PyTorch kullanır ve NVIDIA Container Toolkit gerektirmez. GPU
+kullanıcıları toolkit'i host'a kurup Docker runtime'ını yapılandırdıktan sonra şu komutu
+kullanır:
 
 ```bash
-cd frontend
-npm install
-npm run dev                    # http://localhost:5173
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build -d
 ```
 
-### Sağlık Kontrolleri
+Override, backend imajını CUDA 13.0 PyTorch ile build eder ve hem backend hem Ollama'ya
+`gpus: all` uygular. Kurulum adımları README'dedir. NVIDIA Container Toolkit ana CPU
+kurulumu için zorunlu değildir.
+
+### Servis ve sağlık kontrolleri
 
 ```bash
-curl http://127.0.0.1:8000/
-curl http://127.0.0.1:11434/api/tags   # Ollama açıksa
 docker compose ps
+docker compose logs -f backend
+docker compose exec ollama ollama list
+curl http://localhost:8000/
+curl http://localhost:5173/
 ```
 
-Frontend `http://localhost:5173`, pgAdmin `http://localhost:5050` adresindedir.
+Host adresleri:
+
+- Frontend: `http://localhost:5173`
+- Frontend API proxy: `POST http://localhost:5173/api/search`
+- Backend: `http://localhost:8000` (`POST /search`)
+- PostgreSQL: `localhost:5433`
+- pgAdmin: `http://localhost:5050`
+
+Ollama host portuna açılmaz; yalnız Docker ağında `http://ollama:11434` adresindedir.
+Backend burada doğrudan Ollama servis adına bağlanır. Host'taki ayrı Ollama kurulumu Docker
+stack'i tarafından kullanılmaz.
+
+Stack'i verileri koruyarak kapatmak için:
+
+```bash
+docker compose down
+```
+
+`docker compose down -v` PostgreSQL kataloğu, pgAdmin ayarları ve indirilen modeller dahil
+kalıcı volume'leri siler; normal kapatma için kullanılmamalıdır.
+
+Tüm Compose projeleri kapatıldıktan sonra Docker Engine de durdurulmak istenirse:
+
+```bash
+sudo systemctl stop docker.service docker.socket
+```
+
+Engine'i durdurmak host'taki tüm Docker projelerini etkiler.
 
 ### pgAdmin İlk Bağlantı
 
 Yerel demo girişi `admin@example.com` / `admin123` değerleridir. pgAdmin içinde yeni
 sunucu kaydında Host=`postgres`, Port=`5432`, Database=`aimarket`,
-Username=`aimarket_user`, Password=`aimarket_pass` kullanılır. Backend konteyner dışından
-bağlandığı için `.env` adresinde farklı olarak host portu `5433` kullanır:
+Username=`aimarket_user`, Password=`aimarket_pass` kullanılır. Docker backend de aynı
+Compose ağı içinde `postgres:5432` adresini kullanır. Host'tan doğrudan bağlantı adresi:
 
 ```text
 postgresql://aimarket_user:aimarket_pass@localhost:5433/aimarket
 ```
 
+Mevcut kataloğu yeniden seed etmek tabloyu silip kuran yıkıcı bir işlemdir; yalnız açıkça
+gerektiğinde şu komutla çalıştırılır ve ardından backend yeniden başlatılır:
+
+```bash
+docker compose exec backend python scripts/seed_products_postgres.py
+docker compose restart backend
+```
+
+### Docker olmadan geliştirme
+
+Yerel backend/frontend geliştirme komutları README'dedir. Bu modda `backend/.env.example`
+host PostgreSQL/Ollama adreslerini sağlar; Docker modunda Compose bu değerleri servis
+adlarıyla override eder.
+
 ---
 
 ## 11. Ortam Değişkenleri
 
-`backend/config.py` tüm değişkenleri ENV'den okur. **`DATABASE_URL` dışındaki** hepsinin
-güvenli bir varsayılanı vardır. Açılışta `backend/.env` (varsa) `python-dotenv` ile otomatik
-yüklenir; gerçek shell/CI/docker ENV değerleri yine önceliklidir.
+`backend/config.py` tüm değişkenleri ENV'den okur. Docker Compose gerekli servis adreslerini
+doğrudan sağlar; kökteki `.env.example` isteğe bağlı Compose override'larını gösterir.
+Docker olmadan çalışırken `backend/.env` otomatik yüklenir ve gerçek shell ENV değerleri
+yine önceliklidir.
 
 | Değişken | Varsayılan | Açıklama |
 | --- | --- | --- |
-| `DATABASE_URL` | **(zorunlu, varsayılan yok)** | PostgreSQL libpq URI. Eksikse açılış durur (CSV fallback yok). |
+| `DATABASE_URL` | **(zorunlu, varsayılan yok)** | PostgreSQL libpq URI. Compose: `postgres:5432`; host geliştirme: `localhost:5433`. Eksikse açılış durur. |
 | `PRODUCTS_TABLE` | `products` | Ürün tablosu adı (operatör kontrolünde). |
 | `AI_MARKET_MODEL_NAME` | `paraphrase-multilingual-MiniLM-L12-v2` | Sentence-Transformers modeli. |
 | `AI_MARKET_TAXONOMY_CSV` | `taxonomy.csv` | Taksonomi metni yolu. |
@@ -682,14 +748,14 @@ yüklenir; gerçek shell/CI/docker ENV değerleri yine önceliklidir.
 | `AI_MARKET_TAXONOMY_MATCH_THRESHOLD` | `0.65` | Taksonomi semantic eşleşme eşiği. |
 | `AI_MARKET_RANKING_V2` | `true` | Ranking V2 (directness tier sıralaması). `false` → legacy. |
 | `AI_MARKET_GROUPED_RANKING` | `true` | primary/alternative gruplamasını API/UI'a açar (varsayılan açık). `false` → ungrouped yanıt. |
-| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama HTTP adresi. |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama HTTP adresi. Compose bunu `http://ollama:11434` yapar. |
 | `OLLAMA_MODEL` | `gemma3:4b` | Kullanılacak Ollama model. 10 GB GPU'ya backend embedding modeliyle birlikte sığar; 12b CPU'ya taşar (bkz. Bölüm 12). |
 | `OLLAMA_ENABLED` | `true` | `false` → pipeline tamamen kuralcı çalışır. |
-| `OLLAMA_TIMEOUT_SECONDS` | `15` | Tek çağrı timeout'u. |
+| `OLLAMA_TIMEOUT_SECONDS` | `15` | Tek çağrı timeout'u. CPU Compose varsayılanı `120`, GPU override varsayılanı `30`. |
 | `OLLAMA_CONFIDENCE_THRESHOLD` | `0.6` | Altında Ollama çıktısı reddedilir. |
 | `OLLAMA_WARMUP` | `true` | Açılışta modeli arka planda VRAM'e yükler (ilk sorgu hızlı). |
 | `OLLAMA_KEEP_ALIVE` | `10m` | Modelin istek sonrası bellekte kalma süresi (`"1h"`, `"-1"` = süresiz). |
-| `VITE_API_URL` (frontend) | `http://127.0.0.1:8000/search` | Build-time, public. Sır KOYULMAZ. |
+| `VITE_API_URL` (frontend) | `http://127.0.0.1:8000/search` | Build-time, public. Docker build değeri `/api/search`; sır konulmaz. |
 
 > `docker-compose.yml` içindeki Postgres (`aimarket_user`/`aimarket_pass`) ve pgAdmin
 > (`admin@example.com`/`admin123`) kimlik bilgileri yalnız yerel demo içindir; paylaşımlı/
@@ -707,8 +773,9 @@ yüklenir; gerçek shell/CI/docker ENV değerleri yine önceliklidir.
   edilir; içerikte PII tutulmaz, etki düşüktür.
 - **Single-process.** Session store ve embeddingler tek uvicorn prosesinde tutulur;
   ölçekleme için paylaşımlı index/önbellek gerekir.
-- **Ollama dışsal bağımlılık.** Servis yoksa pipeline çalışır ama normalleştirme ve doğal
-  yanıt yazma devre dışı kalır; cevap kalitesi şablon seviyesine düşer.
+- **Ollama yan servis bağımlılığı.** Docker servisi sonradan erişilemez olursa pipeline
+  çalışır ama normalleştirme ve doğal yanıt yazma fallback'e geçer; cevap kalitesi şablon
+  seviyesine düşer.
 - **Ollama modeli bilinçli olarak `gemma3:4b`.** 4b ve 12b karşılaştırıldı; 12b 10 GB GPU'ya
   backend embedding modeliyle birlikte sığmayıp CPU'ya taştığından çok yavaşladı ve halüsinasyon
   açısından bir avantaj sağlamadı, bu yüzden 4b tercih edildi.

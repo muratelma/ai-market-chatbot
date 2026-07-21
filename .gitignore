@@ -29,12 +29,16 @@ frontend/dist/
 .DS_Store
 Thumbs.db
 
+# Editor/backup files
+*.bak
+*.orig
+*~
+
 # Local/generated data
 backend/raw_products.csv
 backend/products_prepared.csv
 .cursor/
 scratch/
-frontend/vite.config.js.bak
 
 # Generated evaluation reports
 backend/eval/results/*.json

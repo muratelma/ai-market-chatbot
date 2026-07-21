@@ -1,0 +1,12 @@
+services:
+  ollama:
+    gpus: all
+
+  backend:
+    image: aimarket-backend:gpu
+    build:
+      args:
+        PYTORCH_INDEX_URL: https://download.pytorch.org/whl/cu130
+    gpus: all
+    environment:
+      OLLAMA_TIMEOUT_SECONDS: ${OLLAMA_TIMEOUT_SECONDS:-30}

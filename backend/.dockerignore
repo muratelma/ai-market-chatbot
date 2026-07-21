@@ -1,0 +1,12 @@
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+eval/results/
+manual/
+scratch/
+tests/
+raw_products.csv
+products_prepared.csv
+report.json
